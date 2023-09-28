@@ -1,0 +1,284 @@
+﻿-----------------------------------------------------------------------------------------------
+ALTER TABLE `customers` ADD `ids_transacciones_rp` VARCHAR(170) NULL AFTER `fecha_cambio`;
+        
+        CREATE TABLE `recibos_de_pago` (`id` INT NOT NULL AUTO_INCREMENT , `date` DATETIME NOT NULL , `file_name` VARCHAR(200) NOT NULL ,`tid` INT NOT NULL, PRIMARY KEY (`id`)) ENGINE = InnoDB;
+        
+        CREATE TABLE `transactions_ids_recibos_de_pago` (`id` INT NOT NULL AUTO_INCREMENT , `id_recibo_de_pago` INT NOT NULL , `id_transaccion` INT NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;        
+
+
+--------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `crm3`.`orden_de_pago` (
+  `id_orden_de_pago` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `data` VARCHAR(2000) NULL DEFAULT NULL,
+  `metodo_pago` VARCHAR(45) NULL DEFAULT NULL,
+  `monto` INT(11) NULL DEFAULT NULL,
+  `fecha` DATETIME NULL DEFAULT NULL,
+  `user_id` INT(11) NOT NULL,
+  PRIMARY KEY (`id_orden_de_pago`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+ALTER TABLE `orden_de_pago` ADD `estado` ENUM('Link Publicado','Pagado','Cancelado','Expirado') NOT NULL AFTER `user_id`;
+ALTER TABLE `orden_de_pago` ADD `nombre_referencia` VARCHAR(200) NULL DEFAULT NULL AFTER `estado`;
+ALTER TABLE `orden_de_pago` ADD `expire_date` DATETIME NULL DEFAULT NULL AFTER `nombre_referencia`;
+------------------------------------------------------------------------------------
+ALTER TABLE `users` ADD `img_profile` VARCHAR(100) NULL AFTER `cid`;
+----------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `crm5`.`servicios_adicionales` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `tid_invoice` INT(11) NOT NULL,
+  `pid` INT(11) NOT NULL,
+  `valor` VARCHAR(50) NOT NULL COMMENT 'valor es decir la cantidad o valor de lo que solicita ejemplo 5 repetidores',
+  `subtotal` INT(11) NOT NULL,
+  `total` INT(11) NOT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+-------------------------------------------------------------------------------------------------------------
+ALTER TABLE `customers` ADD `ultimo_estado` VARCHAR(50) NULL AFTER `firma_digital`, ADD `fecha_cambio` DATETIME NULL AFTER `ultimo_estado`;
+--------------------------------------------------------------------------------
+ALTER TABLE `aauth_users` ADD `fecha_ultimo_evento` DATE NULL AFTER `tar`;
+-------------------------------------------------------------------------------
+ALTER TABLE `equipos` ADD `imagen` INT NOT NULL AFTER `master`;
+----------------------------------------------------------------------
+INSERT INTO `variables_de_entorno` (`id`, `valor`, `nombre_api`) VALUES (NULL, '{\"user\":\"sistemas@vestel.com.co\",\"password\":\"Vestel1957*\"}', 'payu');
+---------------------------------------------------------------------------
+ALTER TABLE `events` ADD `id_tarea` INT NULL AFTER `idorden`;
+----------------------------------------------------------------------------------------------
+ALTER TABLE `transferencia_products_orden` ADD `id_tarea` INT NULL AFTER `proy_id`;
+--------------------------------------------------------------------------------------------
+ALTER TABLE `aauth_users` ADD `conotas` TINYINT(4) NULL AFTER `cofae`;
+ALTER TABLE `aauth_users` ADD `dathistorial` TINYINT(4) NULL AFTER `datimp`;
+
+--------------------------------------------------------------------------------------------
+ALTER TABLE `invoice_items` ADD `fecha_creacion` DATETIME NULL AFTER `id_usuario_crea`;
+ALTER TABLE `invoice_items` ADD `id_usuario_crea` INT NULL AFTER `tax_removed`;
+
+
+
+
+CREATE TABLE IF NOT EXISTS `crm`.`historial_crm` (
+  `id` BIGINT(19) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `modulo` VARCHAR(250) NULL DEFAULT NULL,
+  `accion` VARCHAR(250) NULL DEFAULT NULL,
+  `id_usuario` VARCHAR(250) NULL DEFAULT NULL,
+  `fecha` DATETIME NULL DEFAULT NULL,
+  `descripcion` VARCHAR(2000) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+ALTER TABLE `historial_crm` ADD `id_fila` INT NOT NULL COMMENT 'id de la fila creada o editada en el modulo' AFTER `descripcion`;
+ALTER TABLE `historial_crm` ADD `tabla` VARCHAR(100) NOT NULL AFTER `id_fila`;
+ALTER TABLE `historial_crm` ADD `nombre_columna` VARCHAR(100) NOT NULL AFTER `tabla`;
+-------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `crm`.`archivos_historias_tareas` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_tarea` INT(11) NULL DEFAULT NULL,
+  `id_historia_tarea` INT(11) NULL DEFAULT NULL,
+  `nombre` VARCHAR(250) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+CREATE TABLE IF NOT EXISTS `crm`.`historial_tareas` (
+  `id_historial_tareas` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_usuario_historial` INT(11) NULL DEFAULT NULL,
+  `id_tarea` INT(11) NULL DEFAULT NULL,
+  `comentario` TEXT NULL DEFAULT NULL,
+  `fecha` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id_historial_tareas`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+ALTER TABLE `historial_tareas` ADD `titulo` VARCHAR(250) NULL AFTER `fecha`;
+
+ALTER TABLE `historial_tareas` ADD `color` VARCHAR(20) NULL AFTER `titulo`;
+
+
+
+--------------------------------------------------------------------------------------
+ALTER TABLE `todolist` ADD `puntuacion` SMALLINT NULL DEFAULT NULL AFTER `rid`;
+
+------------------------------------------------------------------------------------------------
+INSERT INTO `products` (`pid`, `pcat`, `warehouse`, `sede`, `product_name`, `product_code`, `product_price`, `fproduct_price`, `taxrate`, `disrate`, `qty`, `product_des`, `alert`, `id_prod_transfer`) VALUES (NULL, '4', '30', '4', '15MegasD', '15MGD', '299900', '299900', '0', '0', '50000', '', '0', '0')
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ALTER TABLE `customers` ADD `firma_digital` TINYINT NULL DEFAULT NULL AFTER `tegnologia_instalacion`;
+--------------------------------------------------------------------------------------------------------
+ALTER TABLE `estadisticas_servicios` ADD `internet_y_tv` INT NULL AFTER `n_tv`;
+-----------------------------------------------------------------------------------
+ALTER TABLE `invoice_items` ADD `tax_removed` INT NULL AFTER `product_des`;
+
+----------------------------------------------------------------------------------------
+ALTER TABLE `tickets` CHANGE `status` `status` ENUM('Realizando','Resuelto','Anulada','Pendiente') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ALTER TABLE `invoices` CHANGE `resivos_guardados` `resivos_guardados` VARCHAR(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
+ALTER TABLE `temporales` CHANGE `puntos` `puntos` VARCHAR(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
+------------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `crm`.`estadisticas_servicios` (
+  `id_estadisticas_servicios` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `n_internet` INT(11) NOT NULL,
+  `n_tv` INT(11) NOT NULL,
+  `n_activo` INT(11) NOT NULL,
+  `fecha` DATE NOT NULL,
+  PRIMARY KEY (`id_estadisticas_servicios`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+-------------------------------------------sql para estadisticas---------------------------------------
+
+SELECT * FROM `transactions` WHERE `note` LIKE '%Saldo 2021%'; 
+update transactions set tid=-1 where note like "%Saldo 2021%";
+-----------------------------------------para verificar y colocar bandera para saber cuales son las transacciones de caja----------------------
+UPDATE `variables_de_entorno` SET `valor` = '{\"username\":\"api.crmvestel\",\"password\":\"duber123\",\"ip_Yopal\":\"190.14.233.186:8728\",\"Ip_Villanueva_GPON\":\"190.14.238.114:8728\",\"Ip_Villanueva_EPON\":\"190.14.238.114:8780\",\"Ip_Villanueva_EOC\":\"190.14.238.114:8780\",\"ip_Monterrey\":\"190.14.248.42:8728\"}' WHERE `variables_de_entorno`.`id` = 3
+ALTER TABLE `customers` ADD `tegnologia_instalacion` VARCHAR(25) NULL AFTER `credit`;
+ALTER TABLE `aauth_users` ADD `datservicios` tinyint(4) NULL AFTER `dathistorial`;
+-----------------------------------------------------------------------------------------------------------------
+ALTER TABLE `estadisticas_servicios` 
+ADD `cor_int` INT(11) NULL DEFAULT NULL AFTER `n_activo`, 
+ADD `cor_tv` INT(11) NULL DEFAULT NULL AFTER `cor_int`, 
+ADD `car_int` INT(11) NULL DEFAULT NULL AFTER `cor_tv`,
+ADD `car_tv` INT(11) NULL DEFAULT NULL AFTER `car_int`,
+ADD `sus_int` INT(11) NULL DEFAULT NULL AFTER `car_tv`,
+ADD `sus_tv` INT(11) NULL DEFAULT NULL AFTER `sus_int`,
+ADD `ret_int` INT(11) NULL DEFAULT NULL AFTER `sus_tv`,
+ADD `ret_tv` INT(11) NULL DEFAULT NULL AFTER `ret_int`;
+---------------------------------------------------------------------------------------
+ALTER TABLE `tickets` ADD `asignacion_movil` INT NULL DEFAULT NULL AFTER `par`;
+-----------------------------cambios para poder cambiar variables desde el sistema para ejemplo cellvos o otras integraciones-------------
+CREATE TABLE IF NOT EXISTS `variables_de_entorno` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `valor` VARCHAR(2000) NULL,
+  `nombre_api` VARCHAR(70) NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+INSERT INTO `variables_de_entorno` (`id`, `valor`, `nombre_api`) VALUES (NULL, '{"account":"00486800430","password":"Tvsur2018","api_key":"8529863e6706e0659cb610dfaded9c36db43e989"}', 'cellvoz');
+------------mas----
+INSERT INTO `variables_de_entorno` (`id`, `valor`, `nombre_api`) VALUES (NULL, '{"username":"VESGATELEVISIONSAS\\\\\\\\VESGAT17681@apionmicrosoft.com","password":")QP>x3(9dN","Authorization_basic":"U2lpZ29XZWI6QUJBMDhCNkEtQjU2Qy00MEE1LTkwQ0YtN0MxRTU0ODkxQjYx"}', 'siigo')
+INSERT INTO `variables_de_entorno` (`id`, `valor`, `nombre_api`) VALUES (NULL, '{"username":"api.crmvestel","password":"duber123","ip_Yopal":"190.14.233.186:8728","ip_Villanueva":"190.14.238.114:8728","ip_Monterrey":"190.14.248.42:8728"}', 'MikroTik')
+---------------------------------------------------------------------------------------------------------------------------
+----------------------------cambios guardar resivos---------------------------------------------
+ALTER TABLE `invoices` ADD `resivos_guardados` VARCHAR(500) NOT NULL AFTER `tipo_factura`;
+-----------------------------cambios para notacredito y notadebito---------------
+ALTER TABLE `invoices` ADD `tipo_factura` VARCHAR(50) NOT NULL AFTER `multi`;
+---------------------------cambios en customers para agilizar filtros----------------------------------
+ALTER TABLE `customers` ADD `debit` VARCHAR(250) NULL AFTER `checked_seleccionado`, ADD `credit` VARCHAR(250) NULL AFTER `debit`;
+--------------------------------------------------------------------------------------------------------
+-----------------------------cambios para agregar a la db la seleccion al cortar o enviar mensajes-----------------
+ALTER TABLE `customers` ADD `checked_seleccionado` INT NOT NULL DEFAULT '0' AFTER `f_elec_puntos`;
+-----------------------------cambios para agregar estados a los servicios de la factura-----------------
+ALTER TABLE `invoices` ADD `estado_tv` ENUM('Cortado','Suspendido') NULL AFTER `television`;
+ALTER TABLE `invoices` ADD `estado_combo` ENUM('Cortado','Suspendido') NULL AFTER `combo`;
+--------------------------------------------------------------------------------------------------------
+---------------------------cambios para agregar estado abonado a ordenes de compra------------------------
+ALTER TABLE `purchase` CHANGE `status` `status` ENUM('pendiente','cancelado','abonado','recibido','recibido parcial','finalizado','anulado') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'pendiente';
+
+------cambios para la facturacion electronica automatica--------------------------------------------
+ALTER TABLE `facturacion_electronica_siigo` ADD `creado_con_multiple` TINYINT NULL AFTER `s2TaxValue`;
+ALTER TABLE `customers` ADD `facturar_electronicamente` TINYINT NULL AFTER `balance`;
+ALTER TABLE `customers` ADD `f_elec_tv` TINYINT NULL AFTER `facturar_electronicamente`, ADD `f_elec_internet` TINYINT NULL AFTER `f_elec_tv`, ADD `f_elec_puntos` TINYINT NULL AFTER `f_elec_internet`;
+-----------------------------------------------------------------------------------------------------
+------cambios sobre ordenes de compra -------------
+ALTER TABLE `purchase` CHANGE `status` `status` ENUM('pendiente','cancelado','recibido','recibido parcial','finalizado','anulado') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'pendiente';
+----------------------------nuevos cambios--------------
+ALTER TABLE `purchase` ADD `actualizar_stock` TINYINT NULL AFTER `term`;
+ALTER TABLE `purchase` ADD `almacen_seleccionado` INT NULL AFTER `actualizar_stock`;
+ALTER TABLE `purchase_items` ADD `qty_en_almacen` INT NULL AFTER `product_des`;
+--------------------------------------
+ALTER TABLE `transferencia_products_orden` CHANGE `tickets_id` `tickets_id` INT(11) NULL;
+ALTER TABLE `equipos` ADD `master` VARCHAR(150) NOT NULL AFTER `observacion`;
+ALTER TABLE `tickets` ADD `problema` VARCHAR(150) NOT NULL AFTER `status`;
+
+ALTER TABLE `invoices` CHANGE `ron` `ron` ENUM('Activo','Instalar','Cortado','Suspendido','Exonerado','Cartera','Convenio','Depurado','Retirado','Compromiso') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL;
+-------------------------------
+ALTER TABLE `anulaciones` ADD `razon_anulacion` TEXT NOT NULL AFTER `transactions_id`;
+ALTER TABLE `anulaciones` ADD `usuario_anula` VARCHAR(100) NOT NULL AFTER `razon_anulacion`;
+
+
+Cambios para seleccionar sede
+ALTER TABLE `tickets` 
+ADD `finicial` DATE() NULL AFTER `ip_address`;
+ADD `hinicial` TIME() NULL AFTER `finicial`;
+ADD `fcierre` DATE() NULL AFTER `hinicial`;
+ADD `hcierre` TIME() NULL AFTER `fcierre`;
+
+creo que el sql deve de ser asi puesto que ip_adres es de la tabla aauth_users
+
+ALTER TABLE `aauth_users` ADD `finicial` DATE NULL AFTER `ip_address`;
+ALTER TABLE `aauth_users` ADD `hinicial` TIME NULL AFTER `finicial`;
+ALTER TABLE `aauth_users` ADD `fcierre` DATE NULL AFTER `hinicial`;
+ALTER TABLE `aauth_users` ADD `hcierre` TIME NULL AFTER `fcierre`;
+ALTER TABLE `customers` ADD `f_contrato` DATE NULL AFTER `documento`;
+ALTER TABLE `customers` ADD `estrato` VARCHAR(20) NULL AFTER `f_contrato`;
+//nuevos campos tabla equipos
+ALTER TABLE `equipos` ADD `t_instalacion` VARCHAR(10) NULL AFTER `marca`;
+ALTER TABLE `equipos` ADD `puerto` INT NULL AFTER `t_instalacion`;
+ALTER TABLE `equipos` ADD `vlan` INT NULL AFTER `puerto`;
+ALTER TABLE `equipos` ADD `nat` INT NULL AFTER `vlan`;
+//nuevos campos tabla 
+ALTER TABLE `temporales` ADD `residencia` VARCHAR(50) NULL AFTER `barrio`;
+ALTER TABLE `temporales` ADD `referencia` VARCHAR(50) NULL AFTER `residencia`;
+ALTER TABLE `events` ADD `asigno` INT NULL AFTER `rol`;
+ALTER TABLE `transferencia_products_orden` ADD `proy_id` INT NULL AFTER `tickets_id`;
+//nuevos campos tabla historiales
+ALTER TABLE `historiales` ADD `colaborador` VARCHAR(20) NULL AFTER `observacion`;
+//nuevos campos tabla de cuentas
+ALTER TABLE `accounts` ADD `sede` INT NULL AFTER `holder`;
+//nuevos campos tabla tickets
+ALTER TABLE `tickets` ADD `col` VARCHAR(30) NULL AFTER `cid`;
+
+//nuevos campos tabla employee_profile
+ALTER TABLE `employee_profile` ADD `dto` int(50) NOT NULL AFTER `name`;
+ALTER TABLE `employee_profile` ADD `ingreso` date DEFAULT NULL AFTER `dto`;
+ALTER TABLE `employee_profile` ADD `rh` varchar(10) NOT NULL AFTER `ingreso`;
+ALTER TABLE `employee_profile` ADD `eps` varchar(50) NOT NULL AFTER `rh`;
+ALTER TABLE `employee_profile` ADD `pensiones` varchar(50) NOT NULL AFTER `eps`;
+
+//nuevos campos tabla grupos
+ALTER TABLE `custromers_group` ADD `dir` int(50) NOT NULL AFTER `summary`;
+ALTER TABLE `app_system` CHANGE `email` `email` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
+
+
+
+
+
+
+
+
+
+------------------------------------------
+
+
+CREATE TABLE `encuestas` (
+  `id` int(50) NOT NULL,
+  `idemp` int(10) NOT NULL,
+  `idtec` varchar(50) NOT NULL,
+  `norden` int(10) NOT NULL,
+  `detalle` varchar(100) NOT NULL,
+  `presentacion` int(10) NOT NULL,
+  `trato` int(10) NOT NULL,
+  `estado` int(10) NOT NULL,
+  `tiempo` text NOT NULL,
+  `recomendar` text NOT NULL,
+  `observacion` varchar(200) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `encuestas`
+--
+ALTER TABLE `encuestas`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `encuestas`
+--
+ALTER TABLE `encuestas`
+  MODIFY `id` int(50) NOT NULL AUTO_INCREMENT;
+COMMIT;
