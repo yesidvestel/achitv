@@ -1,0 +1,11 @@
+tid;invoicedate;invoiceduedate;subtotal;shipping;discount;tax;Total;pmethod;notes;status;csd;eid;pamnt;items;taxstatus;discstatus;format_discount;refer;television;combo;punto;term;rec;ron;multi;saldo anterior
+2660;01/12/2020;27/12/2020;38750;0;0;3992;42742;;;due;5822;8;0;2;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;17742
+2661;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5823;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
+2662;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5824;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
+2663;01/12/2020;27/12/2020;117759;0;0;3992;121751;;;due;5825;8;0;2;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;96751
+2664;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5826;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
+2665;01/12/2020;27/12/2020;37943;0;0;3992;41935;;;due;5827;8;0;2;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;16935
+2666;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5828;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
+2667;01/12/2020;27/12/2020;41169;0;0;3992;45161;;;due;5829;8;0;2;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;20161
+2668;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5830;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
+2669;01/12/2020;27/12/2020;0;0;0;0;0;;;paid;5831;8;0;1;yes;0;%;Monterrey;television;no;0;0;no;Cortado;0;0
