@@ -552,7 +552,7 @@ class Transactions extends CI_Controller
         //generar reconexion
 		$username = $this->aauth->get_user()->username;
         $tidactualmasuno= $this->db->select('max(codigo)+1 as tid')->from('tickets')->get()->result();
-        if ($reconexion==si /*&& $mes2===$mes1*/){
+        if ($reconexion=='si' /*&& $mes2===$mes1*/){
             $data2['codigo']=$tidactualmasuno[0]->tid;
                 $data2['subject']='servicio';
                 $data2['detalle']=$tipo;
@@ -900,7 +900,7 @@ $this->load->helper('cookie');
 		//generar reconexion
 		$username = $this->aauth->get_user()->username;
 		$tidactualmasuno= $this->db->select('max(codigo)+1 as tid')->from('tickets')->get()->result();
-		if ($reconexion==si && $mes2===$mes1){
+		if ($reconexion=='si' && $mes2===$mes1){
 			$data2['codigo']=$tidactualmasuno[0]->tid;
 				$data2['subject']='servicio';
 				$data2['detalle']=$tipo;
@@ -921,7 +921,7 @@ $this->load->helper('cookie');
                             $data_h['tabla']="tickets";
                             $data_h['nombre_columna']="idt";
                             $this->db->insert("historial_crm",$data_h);
-		}if ($reconexion==si && $mes2>$mes1){
+		}if ($reconexion=='si' && $mes2>$mes1){
 				$data2['codigo']=$tidactualmasuno[0]->tid;
 				$data2['subject']='servicio';
 				$data2['detalle']=$tipo.'2';
