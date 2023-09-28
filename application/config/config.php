@@ -24,7 +24,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 */
 
-$config['base_url'] = 'http://achitel-mydic.com/';
+$config['base_url'] = 'https://achitel-mydic.com/';
 
 /*
 |--------------------------------------------------------------------------
