@@ -147,17 +147,21 @@ $this->load->model("Notas_model","notas");
     public function generar_facturas_action(){
         set_time_limit(20000);
         
-        $caja1=$this->db->get_where('accounts',array('id' =>$_POST['pay_acc']))->row();
+        //$caja1=$this->db->get_where('accounts',array('id' =>$_POST['pay_acc']))->row();
+        $caja2=$this->db->get_where('accounts',array('id' =>$_POST['pay_acc']))->row();
         //$customers = $this->db->get_where("customers", array("usu_estado"=>'Activo',"ciudad"=>$caja1->holder))->result_array();
-        $customers_list = $this->db->query("select * from customers where (usu_estado='Activo' or usu_estado='Compromiso') and gid ='".$caja1->sede."'")->result_array();
+        
+        $customers_list = $this->db->query("select * from customers where (usu_estado='Activo' or usu_estado='Compromiso') and gid ='".$caja2->sede."' ")->result_array();
         $ciudades= array();
         $sdate=$this->input->post("sdate");
         $date1= new DateTime($sdate);
         $sdate1=$date1->format("Y-m-d");
         $time_sdate1=strtotime($sdate1);
         $customers_afectados=array();
+        $x="select * from customers where (usu_estado='Activo' or usu_estado='Compromiso') and gid ='".$caja2->sede."' ";
+        
 $this->load->model('customers_model', 'customers');
-        foreach ($customers_list as $key => $value) {            
+        foreach ($customers_list as $key => $value) {          
             $invoices = $this->db->select("*")->from("invoices")->where('csd='.$value['id'])->order_by('invoicedate',"DESC")->get()->result();
             
             $este_usuario_sele_creo_ahora=false;
@@ -179,13 +183,22 @@ $this->load->model('customers_model', 'customers');
                 }else if($date1->format("Y-m")==$dtime2->format("Y-m")){
                     $_customer_factura_creada=true;
                    // echo "Ya tiene factura 2 ".$sdate1." | ".$value2->invoicedate;
-                }else{                                                                                    
+                }else if(isset($value2->promo) && $value2->promo>0){
+                    $value2->promo--;
+                    $this->db->update("invoices",array("promo"=>$value2->promo),array("tid"=>$value2->tid));
+                    $_customer_factura_creada=true;
+                }else if(isset($value2->promo2) && $value2->promo2==1){
+                    
+                    $this->db->update("invoices",array("promo2"=>0),array("tid"=>$value2->tid));
+                    $_customer_factura_creada=true;
+                }else{ 
+                                                                                 
                     $internet="";
                     $television="";
                     $puntos=0;
                     $_tiene_internet=false;
                     $_tiene_television=false;
-                    if($value2->combo!="no" && $value2->combo!="" && $value2->combo!="-"){                    
+                    if($value2->combo!="no" && $value2->combo!="" && $value2->combo!="-" && !(strpos(strtolower($value2->combo), "solotelevision")!==false)){                    
                         $_tiene_internet=true;
                         $internet=$value2->combo;
                         if($value2->television!="no" && $value2->television!="" && $value2->television!="-"){
@@ -197,26 +210,26 @@ $this->load->model('customers_model', 'customers');
                     if($value2->puntos!=null && $value2->puntos!=0 && $value2->puntos!=''  && $value2->puntos!='no'){
                                 $puntos=$value2->puntos;
                         }
-                    
-                    $lista_items=$this->db->get_where("invoice_items", array('tid' => $value2->tid))->result_array();
-                    foreach ($lista_items as $key => $item_invoic) {
+                    //$serv_solo_tv=null;
+                    //$lista_items=$this->db->get_where("invoice_items", array('tid' => $value2->tid))->result_array();
+                    /*foreach ($lista_items as $key => $item_invoic) {
                         if(strpos(strtolower($item_invoic['product']), "reconexi")!==false){
 
                         }else if(strpos(strtolower($item_invoic['product']), "afiliaci")!==false){
                             
                         }else{
-                            if(strpos(strtolower($item_invoic['product']), "tele")!==false){
-                                //$_tiene_television=true;
+                            if(strpos(strtolower($item_invoic['product']), "solotelevision")!==false){
+                               
                             }else{
                                 if($item_invoic['product']=="Punto Adicional"){
-                                    //$puntos=$item_invoic['qty'];
+                                    
                                 }
                             }
 
                             
 
                         }
-                    }
+                    }*/
                     if($_customer_factura_creada==false){
 
                             
@@ -229,9 +242,39 @@ $this->load->model('customers_model', 'customers');
                             $factura_data['tax']=0;
                             $factura_data['total']=0;
                             $factura_data['subtotal']=0;
+                            $paquete_tv_diff=null;
+                      
+                                if(strtolower($value2->television)!="television" && $value2->television!="no" && $value2->television!="" && $value2->television!="-"){
+                                    $paquete_tv_diff=$this->db->get_where("products", array('product_name' => $value2->television))->row();
+                                    if(empty($paquete_tv_diff)){
+                                        $_tiene_television=false;
+                                    }
+                                }   
+
                             if($_tiene_television==true && ($value2->estado_tv==null || $value2->estado_tv=='null')){
-                               /* if(strpos(strtolower($caja1->holder), strtolower("mocoa"))!==false){*/
-                                    $tv_product= $this->db->get_where("products", array('pid' => "3"))->row();
+                                 
+                                if(!empty($paquete_tv_diff)){
+                                    $tv_product= $paquete_tv_diff;
+                                    $iva1=0;
+                                    if($tv_product->taxrate!="0"){
+                                        $iva1=round(($tv_product->product_price*$tv_product->taxrate)/100);
+                                    }
+                                    
+                                    $x1=$iva1+$tv_product->product_price;
+                                    $television_data['pid']=$tv_product->pid;
+                                    $television_data['price']=$tv_product->product_price;
+                                    $television_data['subtotal']=$x1;
+                                    $television_data['totaltax']=$iva1;
+                                    $television_data['tax']=$tv_product->taxrate;
+                                    $factura_data['tax']=$iva1;
+                                    $factura_data['subtotal']=$tv_product->product_price;
+                                    $factura_data['total']=$x1;
+
+                                    
+                                        $television_data['product']=$tv_product->product_name;
+                                    
+                                }else if(strpos(strtolower($caja2->title), strtolower("mocoa"))!==false){
+                                    $tv_product= $this->db->get_where("products", array('pid' => "159"))->row();
                                     $television_data['pid']=$tv_product->pid;
                                     $television_data['price']=$tv_product->product_price;
                                     $television_data['subtotal']=$tv_product->product_price;
@@ -240,8 +283,28 @@ $this->load->model('customers_model', 'customers');
                                     $television_data['product']="Television";
                                     $factura_data['subtotal']=$tv_product->product_price;
                                     $factura_data['total']=$tv_product->product_price;
-                                /*}else{
-                                    $tv_product= $this->db->get_where("products", array('pid' => "27"))->row();
+                                }else{
+                                    if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                                        $tv_product= $this->db->get_where("products", array('product_name' => $value2->television))->row();
+                                        $iva1=0;
+                                        if($tv_product->taxrate!="0"){
+                                            $iva1=round(($tv_product->product_price*$tv_product->taxrate)/100);
+                                        }
+                                        
+                                        $x1=$iva1+$tv_product->product_price;
+                                        $television_data['pid']=$tv_product->pid;
+                                        $television_data['price']=$tv_product->product_price;
+                                        $television_data['subtotal']=$x1;
+                                        $television_data['totaltax']=$iva1;
+                                        $television_data['tax']=$tv_product->taxrate;
+                                        $factura_data['tax']=$iva1;
+                                        $factura_data['subtotal']=$tv_product->product_price;
+                                        $factura_data['total']=$x1;
+
+                                        
+                                            $television_data['product']=$tv_product->product_name;
+                                    }else{
+                                         $tv_product= $this->db->get_where("products", array('pid' => "27"))->row();
                                     $x1=3992+$tv_product->product_price;
                                     $television_data['pid']=$tv_product->pid;
                                     $television_data['price']=$tv_product->product_price;
@@ -254,8 +317,10 @@ $this->load->model('customers_model', 'customers');
 
                                     
                                         $television_data['product']="Television";
+                                    }
+                                   
                                     
-                                }*/
+                                }
                                 $television_data['tid']=$factura_data['tid'];
                                 $television_data['qty']=1;
                                 $television_data['discount']=0;                                
@@ -362,12 +427,34 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
                                 }
                             //falta los puntos no se olvide hacer igual que en tickets y luego preguntar que alli se valora cada uno en ves de despues de 3 puntos
                             //y crear el invoice
+                                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                                    $lista_items=$this->db->query("select * from invoice_items where tipo_retencion is not null and tid=".$value2->tid)->result_array();
+                                    if( !empty($lista_items) &&  count($lista_items)>0){
+                                        $factura_data['tipo_retencion']=$lista_items[0]['tipo_retencion'];
+                                        foreach ($lista_items as $key_r => $value_r) {
+                                            $factura_data['subtotal']=$factura_data['subtotal']-abs($value_r['price']);
+                                            $factura_data['total']=$factura_data['total']-abs($value_r['price']);
+                                            $data_item=array("tid"=>$factura_data['tid'],"pid"=>0,"product"=>$value_r['product'],"qty"=>$value_r['qty'],"price"=>$value_r['price'],"tax"=>$value_r['tax'],"discount"=>$value_r['discount'],"subtotal"=>$value_r['subtotal'],"totaltax"=>$value_r['totaltax'],"totaldiscount"=>$value_r['totaldiscount'],"product_des"=>$value_r['product_des'],"tax_removed"=>$value_r['tax_removed'],"id_usuario_crea"=>$this->aauth->get_user()->id,"fecha_creacion"=>date("Y-m-d H:i:s"),"tipo_retencion"=>$value_r['tipo_retencion']);
+                                            $this->db->insert("invoice_items",$data_item);    
+                                        }
+                                        
+                                    }
+                                }
                             if($factura_data['total']!=0){
-                                $dia_final_de_mes=date("Y-m-t 23:00:00", $time_sdate1);
-                                $date_fecha_corte=new DateTime($dia_final_de_mes);
-                                
+                               
+                                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                                        $x1 = date($sdate1);
+                                        $mes_siguiente = strtotime("+1 month", strtotime($x1));
+                                        $fecha_siguiente = date("Y-m-03", $mes_siguiente);
+                                        $factura_data['invoiceduedate']=$fecha_siguiente;
+
+                                }else{
+                                     $dia_final_de_mes=date("Y-m-t 23:00:00", $time_sdate1);
+                                     $date_fecha_corte=new DateTime($dia_final_de_mes);
+                                    $factura_data['invoiceduedate']=$date_fecha_corte->format("Y-m-d");    
+                                }
                                 $factura_data['invoicedate']=$sdate1;
-                                $factura_data['invoiceduedate']=$date_fecha_corte->format("Y-m-d");
+                                
                                 $factura_data['discount']=0;
                                 $factura_data['notes']=".";
                                 $factura_data['status']="due";
@@ -382,11 +469,21 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
                                 $factura_data['tipo_factura']="Recurrente";
                                 if($_tiene_television==true){
                                     $factura_data['television']="Television";
+                                    if(!empty($paquete_tv_diff)){
+                                        $factura_data['television']=$paquete_tv_diff->product_name;
+                                    }
+                                    
                                 }else{
                                     $factura_data['television']="no";
                                 }
                                 if($_tiene_internet==true){
-                                    $factura_data['combo']=str_replace(" ","",$internet);
+                                    if(strpos(strtolower($internet), "mega")!==false){
+                                        $factura_data['combo']=str_replace(" ","",$internet);
+                                    }else{
+                                        $factura_data['combo']=$internet;
+                                         
+                                    }
+                                    
                                 }else{
                                     $factura_data['combo']="no";
                                 }
@@ -402,7 +499,9 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
                                 
                                 $factura_data['multi']=$value2->multi;
                                 
-                                    
+                                if(isset($value2->promo2) && $value2->promo2>1){
+                                    $factura_data['promo2']=$value2->promo2-1;
+                                }
 
 
                                     $this->db->insert("invoices",$factura_data);
@@ -428,6 +527,9 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
             }
             //var_dump($value['name']);
             //codigo para pagar con saldo ya existente
+             if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                $este_usuario_sele_creo_ahora=true;
+             }
             if($este_usuario_sele_creo_ahora==false){
                 $invoices=array();
             }else{
@@ -438,8 +540,15 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
             $lista_para_pagos_faltantes=array();
             $saldo_dispo_total=0;
             foreach ($invoices as $key => $inv) {
-               
-                if($inv->tipo_factura=="Fija" || $inv->tipo_factura=="Nota Credito" || $inv->tipo_factura=="Nota Debito"){
+                
+                $validacion_fija=false;
+                if($inv->tipo_factura=="Nota Credito" || $inv->tipo_factura=="Nota Debito"){
+                        $validacion_fija=true;
+                }else if($inv->tipo_factura=="Fija" && $_SESSION[md5("variable_datos_pin")]['db_name']!="admin_crmvestel"){
+                    $validacion_fija=true;
+                }
+
+                if($validacion_fija){ //if($inv->tipo_factura=="Fija" || $inv->tipo_factura=="Nota Credito" || $inv->tipo_factura=="Nota Debito"){
                         //para que se salte este tipo de facturas
                 }else{
                      if($inv->pamnt<0 || $inv->total<0){
@@ -493,7 +602,7 @@ $list_servs=$this->invocies->servicios_adicionales_recurrentes($value2->tid);
 
             
 
-            if(count($lista_para_pagos_faltantes!=0) && $saldo_dispo_total!=0){//&& $value['id']==5605
+            if(count($lista_para_pagos_faltantes) !=0 && $saldo_dispo_total!=0){//&& $value['id']==5605
 
                 foreach ($lista_para_pagos_adelantados as $key => $valuey) {
                     foreach ($lista_para_pagos_faltantes as $key2 => $pag) { 
@@ -697,13 +806,15 @@ var_dump("aqui2");*/
             
 
         }
-        
+        if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+        $this->db->query("UPDATE `invoices` SET `facturacion_electronica` = 'Crear Factura Electronica' WHERE  total!=0 and status='paid' and facturacion_electronica is null and tipo_factura='Recurrente'; ");    
+    }
          $data_h=array();
             $data_h['modulo']="Ventas";
             $data_h['accion']="Generar Facturas Mensuales {insert}";
             $data_h['id_usuario']=$this->aauth->get_user()->id;
             $data_h['fecha']=date("Y-m-d H:i:s");
-            $data_h['descripcion']="Generacion de facturacion mensual, junto con la acomodacion de pagos adelantados en sede ".$caja1->holder." fecha seleccionada ".$sdate;
+            $data_h['descripcion']="Generacion de facturacion mensual, junto con la acomodacion de pagos adelantados en sede ".$caja2->title." fecha seleccionada ".$sdate;
             $data_h['id_fila']="0";
             $data_h['tabla']="invoices";
             $data_h['nombre_columna']="";
@@ -714,7 +825,7 @@ var_dump("aqui2");*/
         $head['title'] = "Generar Facturas";        
         $data['customers_afectados'] = $customers_afectados;
         $data['fecha'] = $sdate1;
-        $data['pay_acc'] = $caja1->holder;
+        $data['pay_acc'] = $caja2->title;
         $head['usernm'] = $this->aauth->get_user()->username;
         $this->load->view('fixed/header', $head);
         $this->load->view('invoices/facturas_generadas', $data);
