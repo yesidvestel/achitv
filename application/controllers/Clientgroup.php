@@ -2767,7 +2767,8 @@ set_time_limit(100000000);
          $this->load->model('invoices_model', 'invocies');
         
         $data['acclist'] = $this->accounts_model->accountslist();
-        $csd = intval($this->input->get('id'));
+	// TODO@SANTIAGO: Change 1
+        $csd = intval($this->input->get('gid'));
         //$data['customer'] = $this->db->get_where("customers",array("id"=>$csd))->row();
         
         $data['due'] = $this->customers->due_details($csd);
