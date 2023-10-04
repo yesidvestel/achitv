@@ -1562,7 +1562,8 @@ include (APPPATH."libraries\RouterosAPI.php");
         $datax['datos']=json_encode($listax);//cuanto esto falle por ser muchos customers y toque buscar una solucion seria guardarlo en dos campos mitad y mitad es decir el count /2 serian los items a guardar en datoa y en dato b el resto de igual forma en el proceso de lectura se leen los dos y de unifican en una sola variable
         $this->db->update("filtros_historial",$datax, array("id"=>$this->aauth->get_user()->id));                
         if($this->db->affected_rows()==0){
-            $datax['id']=$this->aauth->get_user()->id;
+            // $datax['id']=$this->aauth->get_user()->id;
+	    $datax['user_id']=$this->aauth->get_user()->id;
             $this->db->insert("filtros_historial",$datax);
         }
         $var_recordsFiltered=count($lista_customers)-$descontar;
