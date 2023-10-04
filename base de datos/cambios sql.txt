@@ -282,3 +282,9 @@ ALTER TABLE `encuestas`
 ALTER TABLE `encuestas`
   MODIFY `id` int(50) NOT NULL AUTO_INCREMENT;
 COMMIT;
+
+--
+-- nuevo campo en filtros_historial
+--
+ALTER TABLE `filtros_historial`
+ADD user_id INT;
