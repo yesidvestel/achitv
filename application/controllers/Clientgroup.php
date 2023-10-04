@@ -2169,7 +2169,9 @@ include (APPPATH."libraries\RouterosAPI.php");
 
                     
                 }    
-            
+              
+	        }	
+	}
             //filtro por servicios con morosos
             if(isset($_GET['sel_servicios']) && $_GET['sel_servicios'] != '' && $_GET['sel_servicios'] != null ){
                 //aunque sea moroso pero para aplicar el filtro se va a cambiar la variable moroso
@@ -2244,9 +2246,7 @@ include (APPPATH."libraries\RouterosAPI.php");
                 $this->db->update("customers",array("checked_seleccionado"=>1),array('id' =>$customers->id));
                     //$listax[]=array('id' =>$customers->id ,"celular"=>$customers->celular);                                    
             }
-             
-        }
-	}
+           
 	}
         
         echo json_encode($listax);
