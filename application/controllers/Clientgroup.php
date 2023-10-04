@@ -1681,7 +1681,7 @@ include (APPPATH."libraries\RouterosAPI.php");
 
      public function get_filtrados_para_checked(){ 
         set_time_limit(6000);
-        
+        $puntosvar = '';
         $this->db->update("customers",array("checked_seleccionado"=>0),array("gid"=>$_GET['id']));
 
         $listax=array();
@@ -1864,6 +1864,8 @@ include (APPPATH."libraries\RouterosAPI.php");
     
         $descontar=0;
         foreach ($lista_customers as $key => $customers) {
+	if (is_array($due) || $due instanceof Countable) {
+	if (sizeof($due)>0) {
             $due=$this->customers->due_details($customers->id);
             //$money=$this->customers->money_details($customers->id);//para poder arreglar el tema de la velocidad de carga esta ligado con este proceso la solucion a la que llegamos es crear los campos debit y credit en customers y en cada proceso del sistema en los que se cree elimine o editen transacciones se debe de editar el valor de customers;
             //$customers->money=$money['credit'];
@@ -2243,6 +2245,8 @@ include (APPPATH."libraries\RouterosAPI.php");
             }
              
         }
+	}
+	}
         
         echo json_encode($listax);
     
