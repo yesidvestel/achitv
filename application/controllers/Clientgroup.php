@@ -1868,8 +1868,7 @@ include (APPPATH."libraries\RouterosAPI.php");
     
         $descontar=0;
         foreach ($lista_customers as $key => $customers) {
-	if (is_array($due) || $due instanceof Countable) {
-	if (sizeof($due)>0) {
+
             $due=$this->customers->due_details($customers->id);
             //$money=$this->customers->money_details($customers->id);//para poder arreglar el tema de la velocidad de carga esta ligado con este proceso la solucion a la que llegamos es crear los campos debit y credit en customers y en cada proceso del sistema en los que se cree elimine o editen transacciones se debe de editar el valor de customers;
             //$customers->money=$money['credit'];
@@ -2173,8 +2172,8 @@ include (APPPATH."libraries\RouterosAPI.php");
                     
                 }    
               
-	        }	
-	}
+	        	
+	
             //filtro por servicios con morosos
             if(isset($_GET['sel_servicios']) && $_GET['sel_servicios'] != '' && $_GET['sel_servicios'] != null ){
                 //aunque sea moroso pero para aplicar el filtro se va a cambiar la variable moroso
@@ -2546,9 +2545,9 @@ if ($valido) {
         var_dump($api->envio_sms_masivos_por_curl_2($retorno->getToken(),"",""));
     }
     public function cortar_usuarios_multiple(){
-        include (APPPATH."libraries\RouterosAPI.php");
-        $API = new RouterosAPI();
-        $API->debug = false;
+        //include (APPPATH."libraries\RouterosAPI.php");
+        //$API = new RouterosAPI();
+        //$API->debug = false;
         $tipo_corte=$this->input->post("tipo_corte");
         $ids_customers_corte=$this->input->post("ids_customers_corte");
         $description_corte=$this->input->post("description_corte");
