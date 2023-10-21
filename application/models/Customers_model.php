@@ -1651,10 +1651,10 @@ public function calculo_ultimo_estado ($array_add,$customers){
     }
 
     public function activar_estado_usuario($user_name,$id_sede,$tegnologia_instalacion){
-        //include (APPPATH."libraries\RouterosAPI.php");
+        include (APPPATH."libraries/RouterosAPI.php");
         set_time_limit(3000);
-        // $API = new RouterosAPI();
-        //$API->debug = false;
+         $API = new RouterosAPI();
+        $API->debug = false;
         $datos_consulta_ip=array("id_sede"=>$id_sede,"tegnologia"=>$tegnologia_instalacion);
         if ($API->connect($this->get_ip_coneccion_microtik_por_sede($datos_consulta_ip), $_SESSION['variables_MikroTik']->username, $_SESSION['variables_MikroTik']->password)) {
             //$user_name="user_prueba_duber_disabled";
