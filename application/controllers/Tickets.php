@@ -802,9 +802,10 @@ $hiso_devolucion_de_equipo=true;
     }
 $nombre_archiv="assets/firmas_digitales/orden_".$ticket->codigo.".png";
 
-if($status=="Resuelto" && file_exists($nombre_archiv)==false && strpos(strtolower($ticket->detalle), "reconexi")===false && strpos(strtolower($ticket->detalle), "corte")===false ){
+/*if($status=="Resuelto" && file_exists($nombre_archiv)==false && strpos(strtolower($ticket->detalle), "reconexi")===false && strpos(strtolower($ticket->detalle), "corte")===false ){
           echo json_encode(array('status' => 'Error', 'message' =>"Por favor agrega la firma de quien resive el servicio para poder cerrar la orden ", 'pstatus' => "error"));
-}else if($ya_agrego_equipos==false){
+}else */
+if($ya_agrego_equipos==false){
         echo json_encode(array('status' => 'Error', 'message' =>"Por favor agrega un equipo a esta orden antes de cerrarla ", 'pstatus' => "error"));
 }else if($hiso_devolucion_de_equipo==false){
         echo json_encode(array('status' => 'Error', 'message' =>"Por favor realice la devolucion del equipo antes de cerrar la orden ", 'pstatus' => "error"));
