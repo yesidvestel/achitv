@@ -683,45 +683,56 @@ class Tickets Extends CI_Controller
     }
 
     public function update_status()
-    {
+    {   set_time_limit(500000);
+
         $this->load->model('tools_model', 'tools');
         $this->load->model('customers_model', 'customers');
-		$tid = $this->input->post('tid');		
+        $tid = $this->input->post('tid');       
         $status = $this->input->post('status');
         $fecha_final = $this->input->post('fecha_final'); 
         if($fecha_final=="null" || $fecha_final==null || $this->aauth->get_user()->roleid=="2" || $this->aauth->get_user()->roleid==2){
             $fecha_final = date("Y-m-d H:i:s");     
         }
         
-		$ticket = $this->db->get_where('tickets', array('idt' => $tid))->row();
-		$usuario = $this->db->get_where('customers', array('id' => $ticket->cid))->row();
+        $ticket = $this->db->get_where('tickets', array('idt' => $tid))->row();
+        $usuario = $this->db->get_where('customers', array('id' => $ticket->cid))->row();
         $invoice = $this->db->get_where('invoices',array('tid'=>$ticket->id_invoice))->result_array();
-		$temporal=$this->db->get_where('temporales',array('corden'=>$ticket->codigo))->row();
-		if($status=="Realizando"){
-			//cambio cuando se esta realizando
-            $this->db->set('status', $status);
-           // $this->db->set('inicio', date("Y-m-d h:i"));
-            $this->db->where('idt', $tid);
-            if ($this->db->update('tickets')){
-				//cambio color realizando
-				$this->db->set('color', '#2DC548');
-				$this->db->set('start', $fecha_final);
-                $this->db->set('end', $fecha_final);
-
-				$this->db->where('idorden', $ticket->codigo);
-				$this->db->update('events');
-                $data_h['modulo']="tickets";
-                $data_h['accion']="Editando evento ticket linea 703";
-                $data_h['id_usuario']=$this->aauth->get_user()->id;
-                $data_h['fecha']=date("Y-m-d H:i:s");
-                $data_h['descripcion']=$fecha_final;
-                $data_h['id_fila']=$ticket->codigo;
-                $data_h['tabla']="events";
-                $data_h['nombre_columna']="idorden";
-                $this->db->insert("historial_crm",$data_h);
-        };
+        $temporal=$this->db->get_where('temporales',array('corden'=>$ticket->codigo))->row();
+        if($status=="Realizando"){
+            $q=$this->db->query("select * from tickets where asignado='".$ticket->asignado."' and status='Realizando'")->result();
+            $es_valido=true;
+            if(count($q)>0 && $ticket->asignado!=null  && $ticket->asignado!=""){
+                $es_valido=false;
+                $txt_error.="<li>Ya tiene una orden abierta <a href='".base_url()."tickets/thread?id=".$q[0]->idt."'><strong>".$q[0]->codigo."</strong></a></li>";  
+            }
+            if(!$es_valido){
+                echo json_encode(array('status' => 'Error', 'message' =>
+                "<br>".$txt_error, 'pstatus' => "error"));                
+                }else{
+                    //cambio cuando se esta realizando
+                    $this->db->set('status', $status);
+                   // $this->db->set('inicio', date("Y-m-d h:i"));
+                    $this->db->where('idt', $tid);
+                    if ($this->db->update('tickets')){
+                        //cambio color realizando
+                        $this->db->set('color', '#2DC548');
+                        $this->db->set('start', date("Y-m-d H:i:s"));
+                        $this->db->set('end', date("Y-m-d H:i:s"));
+                        $this->db->where('idorden', $ticket->codigo);
+                        $this->db->update('events');
+                        $data_h['modulo']="tickets";
+                        $data_h['accion']="Editando evento ticket linea 703";
+                        $data_h['id_usuario']=$this->aauth->get_user()->id;
+                        $data_h['fecha']=date("Y-m-d H:i:s");
+                        $data_h['descripcion']=$fecha_final;
+                        $data_h['id_fila']=$ticket->codigo;
+                        $data_h['tabla']="events";
+                        $data_h['nombre_columna']="idorden";
+                        $this->db->insert("historial_crm",$data_h);
+                };
+            
         echo json_encode(array('msg1'=>"Realizando",'tid'=>0,'status' => 'Success', 'message' =>
-            $this->lang->line('UPDATED'), 'pstatus' => $status));
+            $this->lang->line('UPDATED'), 'pstatus' => $status));}
    } else if($status=="Anulada"){
     $dataz=array();
         $dataz['status']=$status;
@@ -745,7 +756,7 @@ class Tickets Extends CI_Controller
             $this->lang->line('UPDATED'), 'pstatus' => $status));
    }else{
     $ya_agrego_equipos=true;
-    if($ticket->detalle=="Instalacion" && $status=="Resuelto"){
+    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Activacion") && $status=="Resuelto"){
             if(isset($temporal) && $temporal->internet!="no" && $temporal->internet!=null){
                 $equipo=$this->db->get_where("equipos", array('asignado' => $ticket->cid))->row();
                 if(empty($equipo)){
@@ -789,13 +800,16 @@ $hiso_devolucion_de_equipo=true;
         }
 
     }
-    
-if($ya_agrego_equipos==false){
+$nombre_archiv="assets/firmas_digitales/orden_".$ticket->codigo.".png";
+
+if($status=="Resuelto" && file_exists($nombre_archiv)==false && strpos(strtolower($ticket->detalle), "reconexi")===false && strpos(strtolower($ticket->detalle), "corte")===false ){
+          echo json_encode(array('status' => 'Error', 'message' =>"Por favor agrega la firma de quien resive el servicio para poder cerrar la orden ", 'pstatus' => "error"));
+}else if($ya_agrego_equipos==false){
         echo json_encode(array('status' => 'Error', 'message' =>"Por favor agrega un equipo a esta orden antes de cerrarla ", 'pstatus' => "error"));
 }else if($hiso_devolucion_de_equipo==false){
         echo json_encode(array('status' => 'Error', 'message' =>"Por favor realice la devolucion del equipo antes de cerrar la orden ", 'pstatus' => "error"));
-}else{
-    $tv =null;
+}else{$y=0;
+        $tv =null;
         $inter = null;
         $ptos = null;
     if(isset($temporal)){
@@ -803,44 +817,47 @@ if($ya_agrego_equipos==false){
         $inter = $temporal->internet;
         $ptos = $temporal->puntos;
     }
-		
-		$idfactura = $ticket->id_factura;
+        
+        $idfactura = $ticket->id_factura;
         $data;
-		$detalle = $this->input->post('detalle');
-		$est_afiliacion = $ticket->id_invoice;	
-        $customer=$this->db->get_where("customers",array('id' =>$ticket->cid))->row();	
-		//cambiar estado afiliacion
-		$this->db->set('ron', 'Activo');
+        $detalle = $this->input->post('detalle');
+        $est_afiliacion = $ticket->id_invoice;  
+        $customer=$this->db->get_where("customers",array('id' =>$ticket->cid))->row();  
+        //cambiar estado afiliacion
+        $this->db->set('ron', 'Activo');
         $this->db->where('tid', $est_afiliacion);
         $this->db->update('invoices');
-		
-		//alerta de revision
-		$ciudad = $usuario->ciudad;
-        $ciudad=$this->db->get_where("ciudad",array("idCiudad"=>$ciudad))->row();
-        $ciudad=$ciudad->ciudad;
-		if ($status==='Resuelto' && $ticket->detalle==='Instalacion'){
-		$stdate2 = datefordatabase($fecha_final);
-		$name = 'Revisar orden #'.$ticket->codigo;
-		$estado = 'Due';
-		$priority = 'Low';
-		$stdate = $stdate2;
-		$tdate = '';
-        $employee=8;
-		/*if($ciudad=="Achí" || $ciudad=="Achí"){
-		$employee = 65;
-		}if($ciudad=="Monterrey"){
-			$employee = 52;
-		}if($ciudad=="Villanueva"){
-			$employee = 74;
-		}*/
-		$assign = $this->aauth->get_user()->id;
-		$content = 'Revisar orden #'.$ticket->codigo;
-		$ordenn = $ticket->codigo;
-		$this->tools->addtask($name, $estado, $priority, $stdate, $tdate, $employee, $assign, $content, $ordenn);
-			//cambio color al finalizar
-			$this->db->set('color', '#a3a3a3');
-        	$this->db->where('idorden', $ticket->codigo);
-        	$this->db->update('events');
+        
+        //alerta de revision
+        $ciudad2 = $usuario->ciudad;
+        $ciudad3=$this->db->get_where("ciudad",array("idCiudad"=>$ciudad2))->row();
+        $ciudad=$ciudad3->ciudad;
+        if ($status==='Resuelto' && $ticket->detalle==='Instalacion'){
+        $stdate2 = datefordatabase($fecha_final);
+        $name = 'Revisar orden #'.$ticket->codigo;
+        $estado = 'Due';
+        $priority = 'Low';
+        $stdate = $stdate2;
+        $tdate = '';
+        $asignacion = $this->db->get_where('asignaciones', array('detalle' => 'encuesta','tipo'=> $ciudad))->row();
+        
+            //var_dump($asignacion->colaborador);
+        $employee = $asignacion->colaborador;
+        /*if($ciudad=="YOPAL" || $ciudad=="Yopal"){
+        $employee = 8;
+        }if($ciudad=="Monterrey"){
+            $employee = 52;
+        }if($ciudad=="Villanueva"){
+            $employee = 74;
+        }*/
+        $assign = $this->aauth->get_user()->id;
+        $content = 'Revisar orden #'.$ticket->codigo;
+        $ordenn = $ticket->codigo;
+        $this->tools->addtask($name, $estado, $priority, $stdate, $tdate, $employee, $assign, $content, $ordenn);
+            //cambio color al finalizar
+            $this->db->set('color', '#a3a3a3');
+            $this->db->where('idorden', $ticket->codigo);
+            $this->db->update('events');
             $data_h['modulo']="tickets";
                 $data_h['accion']="Editando evento ticket linea 832";
                 $data_h['id_usuario']=$this->aauth->get_user()->id;
@@ -850,7 +867,7 @@ if($ya_agrego_equipos==false){
                 $data_h['tabla']="events";
                 $data_h['nombre_columna']="idorden";
                 $this->db->insert("historial_crm",$data_h);
-		}$y=0;
+        }
         if(isset($invoice[0])){
             foreach ($invoice[0] as $key => $value) {
                 if($key!='id' && $key!='pmethod' && $key!='status' && $key!='pamnt' && $key!='resivos_guardados'){
@@ -863,8 +880,8 @@ if($ya_agrego_equipos==false){
         $data['tid']=$tidactualmasuno[0]->tid;
         $data['status']='due';
         $data['ron']='Activo';
-		$data['refer']=$ciudad;
-		$data['tipo_factura']='Recurrente';
+        $data['refer']=$ciudad;
+        $data['tipo_factura']='Recurrente';
         //ssss
         $date_fecha_final = new DateTime($fecha_final);
         
@@ -886,20 +903,20 @@ if($ya_agrego_equipos==false){
         // lista_de_invoice_items es la lista de itemes para insertar
         $lista_de_invoice_items = $this->db->select('*')->from('invoice_items')->where("tid='".$ticket->id_invoice."' && ( pid =23 or pid =27)")->get()->result();
         $total=0;
-		$tax2=0;//var_dump($invoice[0]);
+        $tax2=0;//var_dump($invoice[0]);
         //cod x
-		if (isset($temporal) && $ticket->codigo===$temporal->corden){
-			$data['csd']=$ticket->cid;
-			$data['television']=$temporal->tv;
-			$data['combo']=$temporal->internet;
-			$data['puntos']=$temporal->puntos;
-		}
+        if (isset($temporal) && $ticket->codigo===$temporal->corden){
+            $data['csd']=$ticket->cid;
+            $data['television']=$temporal->tv;
+            $data['combo']=$temporal->internet;
+            $data['puntos']=$temporal->puntos;
+        }
         $datay['tid']=$data['tid'];
         $datay['qty']=1;
-        $datay['tax']=0;
+        $datay['tax']=19;
         $datay['discount']=0;
         
-        $datay['totaldiscount']=0;			
+        $datay['totaldiscount']=0;          
                 if($data['combo']!=="no" || $inter==="no"){
                     $producto = $this->db->get_where('products',array('product_name'=>$data['combo']))->row();
                     $x=intval($producto->product_price);
@@ -928,12 +945,13 @@ if($ya_agrego_equipos==false){
                         $datay['subtotal']=$x;         
                     }    
                     //var_dump($data);
-                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
-                        $this->db->insert('invoice_items',$datay);    
+                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Internet2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
+                        $this->db->insert('invoice_items',$datay);  
                     }
                 }
-                
-                if($data['television']!=="no" AND $data['refer']!=="Mocoa" || $tv!=="no" && $ciudad!=="Mocoa"){                
+                //$_SESSION['x0a']=$total;
+                //$_SESSION['x0a_temporal']=$temporal;
+                if((($data['television']!=="no" && $data['refer']!=="Mocoa") || ($tv!=="no" && $ciudad!=="Mocoa")) && (($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto") ){                
                     $producto = $this->db->get_where('products',array('product_name'=>$data['television']))->row();
                     $datay['pid']=$producto->pid;
                     $datay['product']=$producto->product_name;
@@ -966,10 +984,11 @@ if($ya_agrego_equipos==false){
                         $datay['price']=$x;
                         $datay['subtotal']=$x;         
                     }  
-                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
+                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
                         $this->db->insert('invoice_items',$datay);
                     }
                 }
+                //$_SESSION['x01a']=$total;
                     if($data['puntos']!=='0' && $ptos!=='0' && $ptos!==0 && $data['puntos']!=='' && $data['puntos']!==null){                
                     $producto = $this->db->get_where('products',array('pid'=>158))->row();
                     $datay['pid']=$producto->pid;
@@ -984,45 +1003,49 @@ if($ya_agrego_equipos==false){
                     $datay['totaltax']='';
                     $datay['price']=$x;
                     $datay['subtotal']=$x*$datay['qty'];
-                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
+                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
                         $this->db->insert('invoice_items',$datay);
+                        
                     }
                 }
-				if($data['television']!=="no" AND $data['refer']=="Mocoa" || $tv!=="no" && $ciudad=="Mocoa"){                
+                //$_SESSION['x02a']=$total;
+                if($data['television']!=="no" AND $data['refer']=="Mocoa" || $tv!=="no" && $ciudad=="Mocoa"){                
                     $producto = $this->db->get_where('products',array('pid'=>159))->row();
                     $datay['pid']=$producto->pid;
                     $datay['product']=$producto->product_name;
-					$datay['qty']=1;
+                    $datay['qty']=1;
                     $x=intval($producto->product_price);
                     $x=($x/31)*$diferencia->days;
                     $total+=$x;
-					$tax2+=$datay['totaltax'];
+                    $tax2+=$datay['totaltax'];
                     $datay['price']=$x;
-					$datay['totaltax']='';
+                    $datay['totaltax']='';
                     $datay['subtotal']=$x;
-					
-                    if($ticket->detalle=="Instalacion" && $ticket->id_factura==null || $ticket->id_factura==0 && $status=="Resuelto" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2"){
+                    
+                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
                         $this->db->insert('invoice_items',$datay);
+                        
                     }
                 }
-                
-			
+                //$_SESSION['x03a']=$total;
+            
        
                
         //end cod x
-		
+        
         
         $data['subtotal']=$total;
-		$data['tax']=$y;
+        $data['tax']=$y;
         $data['total']=$data['subtotal']+$data['tax'];
         //no haga ni insert ni update si no es instalacion y tambien si ya existe una factura
         $msg1="";
-        if($ticket->detalle=="Instalacion" && $ticket->id_factura==null || $ticket->id_factura==0 && $status=="Resuelto" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2"){
+        //$_SESSION['x1a']=$data;
+        if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2" || $ticket->detalle=="Reconexion Internet2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
             $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
            // if(isset($ticket->id_invoice) && $ticket->id_invoice!=0 && $ticket->id_invoice!="0" ){
                 
                 $list_servs=$this->invoices->servicios_adicionales($ticket->id_invoice,false);
-                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$lista_servs);
+                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$list_servs);
                 //var_dump($ticket->id_invoice);
                 //var_dump($list_servs);
                 foreach ($list_servs as $key_s => $serv_val) {
@@ -1059,38 +1082,56 @@ $x=0;
             $data['subtotal']=$total;
             
             $data['total']=$data['subtotal']+$data['tax'];
-            $this->db->insert('invoices',$data);    
+            //$_SESSION['x2a']=$data;
+            if($this->db->insert('invoices',$data)){
+                if($ticket->par!=null && ($ticket->detalle=="Reconexion Internet2" || $ticket->detalle=="Reconexion Television2")){
+                        $this->db->set('id_factura', $data['tid']);
+                        $this->db->where('par', $ticket->par);
+                        $this->db->update('tickets');
+                    }
+            }
+                
 
             $dataz['id_factura']=$data['tid'];
-			//actualizar estado usuario
+            //actualizar estado usuario
                 $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-                $this->db->set("f_contrato",date("Y-m-d"));
-				$this->db->set('usu_estado', 'Activo');
-        		$this->db->where('id', $ticket->cid);
-				//historial estados
-        		if($this->db->update('customers')){
-					 $dataes = array(
-						'cid' => $ticket->cid,
-						'fecha' => date("Y-m-d H:i:s"),
-						'estado' => 'Activo',
-						);
-						 $this->db->insert("estados",$dataes);
-					}
-				//id factura si se dividio orden
-				$this->db->set('id_factura', $data['tid']);							
-        		
-				//$this->db->where('codigo'!== $ticket->codigo);
+                $this->db->set('usu_estado', 'Activo');
+            //cambiar fecha contrato
+            if($ticket->detalle!="Reconexion Combo2" || $ticket->detalle!="Reconexion Television2" ||       $ticket->detalle!="Reconexion Internet2"){
+                    $this->db->set("f_contrato",date("Y-m-d"));
+                }
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                     $dataes = array(
+                        'cid' => $ticket->cid,
+                        'fecha' => date("Y-m-d H:i:s"),
+                        'estado' => 'Activo',
+                        'col' => $ticket->codigo,
+                        );
+                         $this->db->insert("estados",$dataes);
+                    }
+                //id factura si se dividio orden
+                $this->db->set('id_factura', $data['tid']);                         
+                
+                //$this->db->where('codigo'!== $ticket->codigo);
                 if($ticket->par!=null){
                     $this->db->where('par', $ticket->par);
-        		  $this->db->update('tickets');
+                  $this->db->update('tickets');
                 }
                 //mikrotik
                 
-                $this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+                //$this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                 $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                ////$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
         }else{
             $msg1="no redirect";        
-		}
+        }
 
         if(strpos(strtolower($ticket->detalle), "reconexi")!==false){                        
                 $datay=array();
@@ -1125,7 +1166,6 @@ $x=0;
                         $datay['price']=$x;
                         $datay['totaltax']=$iva;
                         $datay['subtotal']=$x+$iva;
-
                         $this->db->insert("invoice_items",$datay); //descomentar el lunes
                         $inv=$this->db->get_where("invoices",array("tid"=>$datay['tid']))->row();
                         $d_inv=array();
@@ -1143,7 +1183,7 @@ $x=0;
                         $paquete = $ticket->section;
                     }
                     //insertar internet si no hay en el invoice       
-                    $name=strtolower(str_replace(" ", "",$paquete ));
+     /*               $name=strtolower(str_replace(" ", "",$paquete ));
                     $producto = $this->db->query('SELECT * FROM products WHERE REPLACE(lower(product_name)," ","") LIKE "'.$name.'" ')->result_array();                    
                     $inv_item=$this->db->query('SELECT * from invoice_items WHERE REPLACE(lower(product)," ","") LIKE "%'.$name.'%" and tid="'. $datay['tid'].'"')->result_array();
                             if(count($inv_item)==0 && count($producto)!=0 && $insertar_internet==true){
@@ -1175,7 +1215,7 @@ $x=0;
                                 $this->db->update("invoices",$d_inv,array("tid"=>$datay['tid'])); //descomentar el lunes
                                 
                             }                      
-                            
+                            */
                 //termina reconexion combo o tv
                 
                 //completar el proceso aqui para cada uno de los casos insertar y actualizar valores monetarios
@@ -1187,398 +1227,518 @@ $x=0;
                 
 
         }//abre en 868
-		if($status=="Resuelto"){
+        if($status=="Resuelto"){
         //var_dump($ticket->cid);
         //$customer=$this->db->get_where("customers",array('id' =>$ticket->cid))->row();
        
-		if($ticket->detalle=="Subir megas" || $ticket->detalle=="Bajar megas"){
-            $this->customers->edit_profile_mikrotik($customer->gid,$customer->name_s,$ptos,$customer->tegnologia_instalacion);
+        if($ticket->detalle=="Subir megas" || $ticket->detalle=="Bajar megas"){
+            if($customer->name_s!=''||$customer->name_s!=null||$customer->name_s!=0){
+                //$this->customers->edit_profile_mikrotik($customer->gid,$customer->name_s,$ptos,$customer->tegnologia_instalacion);
+
+                  $id_sede_mk=$customer->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customer->ciudad;
+                }
+                ////$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+                //$this->customers->edit_profile_mikrotik($id_sede_mk,$customer->name_s,$ptos,$customer->tegnologia_instalacion);
+            }            
             $this->db->set('combo', $inter);
 
             $this->db->set('estado_combo', null);
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
 
             $this->db->set('perfil', $ptos);
+            $this->db->set('f_contrato', date("Y-m-d"));
             $this->db->where('id', $ticket->cid);
             $this->db->update('customers');
-		}
-		if($ticket->detalle=="Reconexion Combo"){
-			$paquete = $this->input->post('paquete');
+        }
+        if($ticket->detalle=="Migracion"){
+            $this->db->set('f_contrato', date("Y-m-d"));
+            $this->db->where('id', $ticket->cid);
+            $this->db->update('customers');
+        }
+        if($ticket->detalle=="Reconexion Combo"){
+            /*$paquete = $this->input->post('paquete');
             if($paquete=="null" || $paquete==null || $paquete=="" || $paquete=="-"){
                         $paquete = $ticket->section;
-                    }
-			$this->db->set('combo', $paquete);
-			$this->db->set('television', 'Television');
+                    }*/
+            //$this->db->set('combo', $paquete);
+            //$this->db->set('television', 'Television');
             $this->db->set('estado_tv', null);
             $this->db->set('estado_combo', null);
-			$this->db->set('ron', 'Activo');
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+            $this->db->set('ron', 'Activo');
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Activo');
-        		$this->db->where('id', $ticket->cid);
-				//historial estados
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Activo',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', 'Activo');
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Activo',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
              //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}		
-		if($ticket->detalle=="Reconexion Internet"){
-			$paquete = $this->input->post('paquete');
+                //$this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }       
+        if($ticket->detalle=="Reconexion Internet"){
+            /*$paquete = $this->input->post('paquete');
             if($paquete=="null" || $paquete==null || $paquete=="" || $paquete=="-"){
                         $paquete = $ticket->section;
-                    }
-			$this->db->set('combo', $paquete);			
+                    }*/
+            //$this->db->set('combo', $paquete);            
             $this->db->set('estado_combo', null);
-			$this->db->set('ron', 'Activo');
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+            $this->db->set('ron', 'Activo');
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Activo');
-        		$this->db->where('id', $ticket->cid);
-        		//historial estados
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Activo',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', 'Activo');
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Activo',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
                  //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}
-		if($ticket->detalle=="Reconexion Television"){
-			$paquete = $this->input->post('paquete');
-			$this->db->set('television', 'Television');	
+                //$this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="Reconexion Television"){
+            $paquete = $this->input->post('paquete');
+            //$this->db->set('television', 'Television');   
             $this->db->set('estado_tv', null);
-			$this->db->set('ron', 'Activo');
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+            $this->db->set('ron', 'Activo');
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Activo');
-        		$this->db->where('id', $ticket->cid);
-        		//historial estados
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Activo',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
-		}
+                $this->db->set('usu_estado', 'Activo');
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Activo',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
+        }
        
 
-		if($ticket->detalle=="Corte Combo"){
+        if($ticket->detalle=="Corte Combo"){
 
-             $reconexion = '0';
+             /*$reconexion = '0';
                             if ($factura->combo!='no' || $factura->combo!='' || $factura->combo!='-'){
                                     $reconexion = '1';
-                            }  //preguntar si no es necesario este codigo
-			//agregar reconexion
-			$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexion Television'))->row();
-				$data2['tid']=$idfactura;
-				$data2['pid']=$producto2->pid;
-                $data2['product']=$producto2->product_name;
-                $data2['price']=$producto2->product_price;
-				$data2['qty']=1;
-                $data2['subtotal']=$producto2->product_price;			
-            	$this->db->insert('invoice_items',$data2);
-			//actualizar factura
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-				$this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
-				$this->db->set('ron', 'Cortado');				
-				$this->db->set('total', $factura->total+$producto2->product_price);
-				$this->db->set('items', $factura->items+1);
-                $this->db->set('rec', $reconexion);//preguntar por este campo
-				
+                            } */ //preguntar si no es necesario este codigo
+            //agregar reconexion
+            //$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexion Combo'))->row();
+                //$data2['tid']=$idfactura;
+                //$data2['pid']=$producto2->pid;
+                //$data2['product']=$producto2->product_name;
+                //$data2['price']=$producto2->product_price;
+                //$data2['qty']=1;
+                //$data2['subtotal']=$producto2->product_price;         
+                //$this->db->insert('invoice_items',$data2);
+            //actualizar factura
+            //$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+                //$this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
+                $this->db->set('ron', 'Cortado');               
+                //$this->db->set('total', $factura->total+$producto2->product_price);
+                //$this->db->set('items', $factura->items+1);
+                //$this->db->set('rec', $reconexion);//preguntar por este campo
+                
                 /*$this->db->set('television', 'no');
-				$this->db->set('combo', 'no');*/ //esto se comenta porque ya no se va a manejar con el no para cuando esta cortado sino con el estado del servicio si este campo esta en no quiere decir que no cuenta con este servicio el usuario
+                $this->db->set('combo', 'no');*/ //esto se comenta porque ya no se va a manejar con el no para cuando esta cortado sino con el estado del servicio si este campo esta en no quiere decir que no cuenta con este servicio el usuario
                 $this->db->set('estado_tv', 'Cortado');
                 $this->db->set('estado_combo', 'Cortado');
-        		$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');
-			//actualizar estado usuario
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');
+            //actualizar estado usuario
                 $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Cortado');
-        		$this->db->where('id', $ticket->cid);
-        		//historial estados
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Cortado',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', 'Cortado');
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Cortado',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
 
                  //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}
-		if($ticket->detalle=="Corte Internet"){
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-			$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Internet'))->row();
-			if ($factura->television==='no'  || $factura->television=='' || $factura->television==null || $factura->television=='-' || $factura->estado_tv=="Cortado" ||  $factura->estado_tv=="Suspendido"){
-				$nestado = 'Cortado';
-				$reconexion = '0';
-			}else{
-				$nestado = 'Activo';
-				$reconexion = '1';
-			}
-				//actualizar estado usuario
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="Corte Internet"){
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+            $producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Internet'))->row();
+            if ($factura->television==='no'  || $factura->television=='' || $factura->television==null || $factura->television=='-' || $factura->estado_tv=="Cortado" ||  $factura->estado_tv=="Suspendido"){
+                $nestado = 'Cortado';
+                $reconexion = '0';
+            }else{
+                $nestado = 'Activo';
+                $reconexion = '1';
+            }
+                //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', $nestado);
-        		$this->db->where('id', $ticket->cid);
-				//historial estado
-				if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => $nestado,
-					);
-					 if($this->db->insert("estados",$dataes)){
-				//agregar reconexion	
-				/*?>$data2['tid']=$idfactura;
-				$data2['pid']=$producto2->pid;
+                $this->db->set('usu_estado', $nestado);
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => $nestado,
+                    'col' => $ticket->codigo,
+                    );
+                     if($this->db->insert("estados",$dataes)){
+                //agregar reconexion    
+                /*?>$data2['tid']=$idfactura;
+                $data2['pid']=$producto2->pid;
                 $data2['product']=$producto2->product_name;
                 $data2['price']=$producto2->product_price;
-				$data2['qty']=1;
-                $data2['subtotal']=$producto2->product_price;			
-            	$this->db->insert('invoice_items',$data2);<?php */
-			//actualizar factura
-				/*$this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
-				$this->db->set('total', $factura->total+$producto2->product_price);
-				$this->db->set('items', $factura->items+1);*/
-				$this->db->set('ron', $nestado);
-				$this->db->set('rec', $reconexion);
-				//$this->db->set('combo', 'no');
+                $data2['qty']=1;
+                $data2['subtotal']=$producto2->product_price;           
+                $this->db->insert('invoice_items',$data2);<?php */
+            //actualizar factura
+                /*$this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
+                $this->db->set('total', $factura->total+$producto2->product_price);
+                $this->db->set('items', $factura->items+1);*/
+                $this->db->set('ron', $nestado);
+                $this->db->set('rec', $reconexion);
+                //$this->db->set('combo', 'no');
                 $this->db->set('estado_combo', 'Cortado');
-				$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');
 
-			
+            
              //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-				}
-			}
-		}
-		if($ticket->detalle=="Corte Television"){
-			//agregar reconexion
-			$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Television'))->row();
-				$data2['tid']=$idfactura;
-				$data2['pid']=$producto2->pid;
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+                }
+            }
+        }
+        if($ticket->detalle=="Corte Television"){
+            //agregar reconexion
+            /*$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Television'))->row();
+                $data2['tid']=$idfactura;
+                $data2['pid']=$producto2->pid;
                 $data2['product']=$producto2->product_name;
                 $data2['price']=$producto2->product_price;
-				$data2['qty']=1;
-                $data2['subtotal']=$producto2->product_price;			
-            	$this->db->insert('invoice_items',$data2);
-			//actualizar factura
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-				$this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
-				$this->db->set('total', $factura->total+$producto2->product_price);
-				$this->db->set('items', $factura->items+1);
+                $data2['qty']=1;
+                $data2['subtotal']=$producto2->product_price;           
+                $this->db->insert('invoice_items',$data2);*/
+            //actualizar factura
+            /*$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+                $this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
+                $this->db->set('total', $factura->total+$producto2->product_price);
+                $this->db->set('items', $factura->items+1);*/
                 $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
                 $this->db->set('estado_tv', 'Cortado');
-				$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');
-			if ($factura->combo==='no' || $factura->combo=='' || $factura->combo==null || $factura->combo=='-' || $factura->estado_combo=="Cortado" || $factura->estado_combo=="Suspendido"){
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');
+            if ($factura->combo==='no' || $factura->combo=='' || $factura->combo==null || $factura->combo=='-' || $factura->estado_combo=="Cortado" || $factura->estado_combo=="Suspendido"){
                 
-				$this->db->set('ron', 'Cortado');
-				//$this->db->set('television', 'no');
-				$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');
-				//actualizar estado usuario
+                $this->db->set('ron', 'Cortado');
+                //$this->db->set('television', 'no');
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');
+                //actualizar estado usuario
                 $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Cortado');
-        		$this->db->where('id', $ticket->cid);
-				//historial estado
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Cortado',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
-			}else{
-				//actualizar factura
-				$this->db->set('ron', 'Activo');
-				//para generar reconexion
-				$this->db->set('rec', '1');	
-				//$this->db->set('television', 'no');			
-        		$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');
-				//actualizar estado usuario
+                $this->db->set('usu_estado', 'Cortado');
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Cortado',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
+            }else{
+                //actualizar factura
+                $this->db->set('ron', 'Activo');
+                //para generar reconexion
+                $this->db->set('rec', '1'); 
+                //$this->db->set('television', 'no');           
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');
+                //actualizar estado usuario
                 $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Activo');
-        		$this->db->where('id', $ticket->cid);
-				//historial estado
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Activo',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
-			}
-				
-			
-		}
-		if($ticket->detalle=="Traslado"){
-			$codigo = $ticket->codigo;
-			$traslados=$this->db->get_where('temporales',array('corden'=>$codigo))->row();
-			$datat = array(
-				'localidad' => $traslados->localidad,
-				'barrio' => $traslados->barrio,
-			  	'nomenclatura' => $traslados->nomenclatura,
-				'numero1' => $traslados->nuno,
-				'adicionauno' => $traslados->auno,
-				'numero2' => $traslados->ndos,
-				'adicional2' => $traslados->ados,
-				'numero3' => $traslados->ntres,
-				'residencia' => $traslados->residencia,
-				'referencia' => $traslados->referencia,
-			);
-			//actualizar estado usuario				
-        		$this->db->where('id', $ticket->cid);
-        		$this->db->update('customers', $datat);
-		}
-		if($ticket->detalle=="Suspension Combo"){			
-			$this->db->set('ron', 'Suspendido');
-			//$this->db->set('television', 'no');
-			//$this->db->set('combo', 'no');
+                $this->db->set('usu_estado', 'Activo');
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Activo',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
+            }
+                
+            
+        }
+        if($ticket->detalle=="Traslado"){
+            $codigo = $ticket->codigo;
+            $traslados=$this->db->get_where('temporales',array('corden'=>$codigo))->row();
+            $cushis=$this->db->get_where('customers',array('id'=>$ticket->cid))->row();
+            $dataH = array(
+                'id_user' => $ticket->cid,
+                'tipos' => 'Traslado',
+                'fecha' => date("Y-m-d"),
+                'observacion' => 'Direccion anterio: '.$cushis->nomenclatura.' '.$cushis->numero1.$cushis->adicionauno.' # '.$cushis->numero2.$cushis->adicional2.' - '.$cushis->numero3.'/'.$cushis->residencia.' '.$cushis->referencia,
+                'colaborador' => $this->aauth->get_user()->username,
+            );
+             if($this->db->insert("historiales",$dataH)){
+                 $datat = array(
+                'localidad' => $traslados->localidad,
+                'barrio' => $traslados->barrio,
+                'nomenclatura' => $traslados->nomenclatura,
+                'numero1' => $traslados->nuno,
+                'adicionauno' => $traslados->auno,
+                'numero2' => $traslados->ndos,
+                'adicional2' => $traslados->ados,
+                'numero3' => $traslados->ntres,
+                'residencia' => $traslados->residencia,
+                'referencia' => $traslados->referencia,
+                );
+                if($traslados->pago=='no'){
+                    $datat['f_contrato']=date("Y-m-d");
+                }
+                //actualizar estado usuario             
+                    $this->db->where('id', $ticket->cid);
+                    $this->db->update('customers', $datat);
+                }
+            
+        }
+        if($ticket->detalle=="Suspension Combo"){           
+            $this->db->set('ron', 'Suspendido');
+            //$this->db->set('television', 'no');
+            //$this->db->set('combo', 'no');
             $this->db->set('estado_tv', 'Suspendido');
             $this->db->set('estado_combo', 'Suspendido');
 
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Suspendido');
-        		$this->db->where('id', $ticket->cid);
-				//historial estados
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Suspendido',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', 'Suspendido');
+                $this->db->where('id', $ticket->cid);
+                //historial estados
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Suspendido',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
                  //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}
-		if($ticket->detalle=="Retiro voluntario"){			
-			$this->db->set('ron', 'Retirado');
-			//$this->db->set('television', 'no');
-			//$this->db->set('combo', 'no');
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="Retiro voluntario"){          
+            $this->db->set('ron', 'Retirado');
+            //$this->db->set('television', 'no');
+            //$this->db->set('combo', 'no');
             $this->db->set('estado_tv', 'Suspendido');
             $this->db->set('estado_combo', 'Suspendido');
 
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', 'Retirado');
-        		$this->db->where('id', $ticket->cid);
-				//historial estado
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => 'Retirado',
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', 'Retirado');
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Retirado',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
                  //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}
-		if($ticket->detalle=="Suspension Television"){
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-			if ($factura->combo===no){
-				$status2 = 'Suspendido';
-			}else{
-				$status2 = 'Activo';
-			}
-			$this->db->set('ron', $status2);
-			//$this->db->set('television', 'no');	
-            $this->db->set('estado_tv', 'Suspendido');            	
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="Suspension Television"){
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+            if ($factura->combo==='no'){
+                $status2 = 'Suspendido';
+            }else{
+                $status2 = 'Activo';
+            }
+            $this->db->set('ron', $status2);
+            //$this->db->set('television', 'no');   
+            $this->db->set('estado_tv', 'Suspendido');              
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', $status2);
-        		$this->db->where('id', $ticket->cid);
-        		//historial estado
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => $status2,
-					);
-					 $this->db->insert("estados",$dataes);
-				}
-		}
-		if($ticket->detalle=="Suspension Internet"){
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-			if ($factura->television===no){
-				$status2 = 'Suspendido';
-			}else{
-				$status2 = 'Activo';
-			}
-			$this->db->set('ron', $status2);
-			//$this->db->set('combo', 'no');		            
-            $this->db->set('estado_combo', 'Suspendido');	
-        	$this->db->where('tid', $idfactura);
-        	$this->db->update('invoices');
-			//actualizar estado usuario
+                $this->db->set('usu_estado', $status2);
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => $status2,
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
+        }
+        if($ticket->detalle=="Suspension Internet"){
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+            if ($factura->television==='no'){
+                $status2 = 'Suspendido';
+            }else{
+                $status2 = 'Activo';
+            }
+            $this->db->set('ron', $status2);
+            //$this->db->set('combo', 'no');                    
+            $this->db->set('estado_combo', 'Suspendido');   
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
             $this->db->set("ultimo_estado",$customer->usu_estado);
                 $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
-				$this->db->set('usu_estado', $status2);
-        		$this->db->where('id', $ticket->cid);
-        		//historial estado
-        		if($this->db->update('customers')){
-				 $dataes = array(
-					'cid' => $ticket->cid,
-					'fecha' => date("Y-m-d H:i:s"),
-					'estado' => $status2,
-					);
-					 $this->db->insert("estados",$dataes);
-				}
+                $this->db->set('usu_estado', $status2);
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => $status2,
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
                  //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-		}
-		if($ticket->detalle=="AgregarTelevision"){			
-			$producto = $this->db->get_where('products',array('product_name'=>'Television'))->row();
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="Retiro y Desinstalacion por Cartera"){
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+            /*if ($factura->television===no){
+                $status2 = 'Cartera';
+            }else{
+                $status2 = 'Activo';
+            }*/
+            $this->db->set('ron', 'Cartera');
+            //$this->db->set('combo', 'no');                    
+            $this->db->set('estado_tv', 'Cortado'); 
+            $this->db->set('estado_combo', 'Cortado');  
+            $this->db->where('tid', $idfactura);
+            $this->db->update('invoices');
+            //actualizar estado usuario
+            $this->db->set("ultimo_estado",$customer->usu_estado);
+                $this->db->set("fecha_cambio",date("Y-m-d H:i:s"));
+                $this->db->set('usu_estado', 'Cartera');
+                $this->db->where('id', $ticket->cid);
+                //historial estado
+                if($this->db->update('customers')){
+                 $dataes = array(
+                    'cid' => $ticket->cid,
+                    'fecha' => date("Y-m-d H:i:s"),
+                    'estado' => 'Cartera',
+                    'col' => $ticket->codigo,
+                    );
+                     $this->db->insert("estados",$dataes);
+                }
+                 //mikrotik
+                $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+        }
+        if($ticket->detalle=="AgregarTelevision" || ($ticket->detalle=="Reconexion Television2" && ($ticket->id_factura!=0 || $ticket->id_factura!=null))){         
+            $producto = $this->db->get_where('products',array('product_name'=>$data['television']))->row();
             $total=0;
             $taxvalue=0;
             
@@ -1612,10 +1772,11 @@ $x=0;
                         $datay['price']=$x;
                         $datay['subtotal']=$x;         
                     }   
-                    /*end new changes*/ 
+                    /*end new changes*/    
+                    //var_dump($total);
                     /*serv ads*/  
                     $list_servs=$this->invoices->servicios_adicionales($idfactura,false);
-                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$lista_servs);
+                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$list_servs);
                 //var_dump($ticket->id_invoice);
                 //var_dump($list_servs);
                 foreach ($list_servs as $key_s => $serv_val) {
@@ -1657,24 +1818,25 @@ $x=0;
             $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
             //var_dump($factura->subtotal);
             //var_dump($total);
-				$this->db->set('subtotal', $factura->subtotal+$total);
-				$this->db->set('tax', $factura->tax+$taxvalue);
+                $this->db->set('subtotal', $factura->subtotal+$total);
+                $this->db->set('tax', $factura->tax+$taxvalue);
                 $this->db->set('total', $factura->total+$total+$taxvalue);
-				$this->db->set('television', 'Television');
+                $this->db->set('television', $producto->product_name);
                 $this->db->set('estado_tv', null);
-				$this->db->set('puntos', $ptos);
-        		$this->db->where('tid', $idfactura);
-        		if ($this->db->update('invoices')){
-			//actualizar contrato usuario
+                $this->db->set('puntos', $ptos);
+                $this->db->where('tid', $idfactura);
+                if ($this->db->update('invoices') && $ticket->detalle!="Reconexion Television2"){
+            //actualizar contrato usuario
                 $this->db->set("f_contrato",date("Y-m-d"));
-        		$this->db->where('id', $ticket->cid);
-        		$this->db->update('customers');
-				}
-			
-		}
-		//nuevo servicio
-		if($ticket->detalle=="AgregarInternet"){	
+                $this->db->where('id', $ticket->cid);
+                $this->db->update('customers');
+                }
+            
+        }
+        //nuevo servicio
+        if($ticket->detalle=="AgregarInternet" || ($ticket->detalle=="Reconexion Internet2" && ($ticket->id_factura!=0 && $ticket->id_factura!=null))){ 
         $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+        //$_SESSION['x1a']=$idfactura;
         $datay['tid']=$idfactura;
         $datay['qty']=1;
         $datay['tax']=0;
@@ -1682,8 +1844,8 @@ $x=0;
         $datay['totaldiscount']=0;
             //agregar servicio nuevo
         $y=0;
-                if($data['combo']!==no){
-                    $producto = $this->db->get_where('products',array('product_name'=>$inter))->row();
+                if($data['combo']!=='no'){
+                    $producto = $this->db->get_where('products',array('product_name'=>$factura->combo))->row();
                     $datay['pid']=$producto->pid;
                     $x=intval($producto->product_price);
                     $x=($x/31)*$diferencia->days;
@@ -1724,7 +1886,7 @@ $x=0;
                 }
              /*serv ads*/  
                     $list_servs=$this->invoices->servicios_adicionales($idfactura,false);
-                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$lista_servs);
+                $list_servs=$this->invoices->servicios_adicionales_idt($ticket->idt,$list_servs);
                 //var_dump($ticket->id_invoice);
                 //var_dump($list_servs);
                 foreach ($list_servs as $key_s => $serv_val) {
@@ -1757,56 +1919,91 @@ $x=0;
                         $data_item_serv['subtotal']=round($x*$data_item_serv['qty']);
                         $this->db->insert('invoice_items',$data_item_serv);
                 }
-				$this->db->set('subtotal', $factura->subtotal+$total);
+                $this->db->set('subtotal', $factura->subtotal+$total);
                 $this->db->set('tax', ($factura->tax+$y));
                 $this->db->set('total', $factura->total+($total+$y));
-				$this->db->set('combo', $inter);
+                $this->db->set('combo', $factura->combo);
                 $this->db->set('estado_combo', null);
-        		$this->db->where('tid', $idfactura);
-        		if ($this->db->update('invoices')){
-					//actualizar contrato usuario
-					$this->db->set("f_contrato",date("Y-m-d"));
-					$this->db->where('id', $ticket->cid);
-					$this->db->update('customers');
-					}
+                $this->db->where('tid', $idfactura);
+                if ($this->db->update('invoices')&&$ticket->detalle!="Reconexion Internet2"){
+                    //actualizar contrato usuario
+                    $this->db->set("f_contrato",date("Y-m-d"));
+                    $this->db->where('id', $ticket->cid);
+                    $this->db->update('customers');
+                    }
 
                   //mikrotik
                 $customerx=$this->db->get_where("customers",array('id' =>$ticket->cid ))->row();
-                $this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
-			
-		}
-		if($ticket->detalle=="Toma Adicional"){
-			$punto = $this->input->post('puntos');
-			$producto2 = $this->db->get_where('products',array('pid'=>69))->row();
-				$data2['tid']=$idfactura;
-				$data2['pid']=$producto2->pid;
+                //$this->customers->activar_estado_usuario($customerx->name_s,$customerx->gid,$customerx->tegnologia_instalacion);
+
+                $id_sede_mk=$customerx->gid;
+                if($_SESSION[md5("variable_datos_pin")]['db_name']=="admin_crmvestel"){
+                    $id_sede_mk=$customerx->ciudad;
+                }
+                ////$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
+            
+        }
+        if($ticket->detalle=="Toma Adicional"){
+            $punto = $temporal->puntos;
+            $producto2 = $this->db->get_where('products',array('product_name'=>'Punto Adicional'))->row();
+                $data2['tid']=$idfactura;
+                $data2['pid']=$producto2->pid;
                 $data2['product']=$producto2->product_name;
-				$x=intval($producto2->product_price);
+                $x=intval($producto2->product_price);
                 $x=($x/31)*$diferencia->days;
                 $data2['price']=$x;
-				$data2['qty']=$punto;
-				$valorit = $x*$punto;
-                $data2['subtotal']=$valorit;			
-            	$this->db->insert('invoice_items',$data2);
-			//actualizar factura
-			$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
-				$this->db->set('subtotal', $factura->subtotal+$valorit);
-				$this->db->set('total', $factura->total+$valorit);
-				$this->db->set('items', $factura->items+1);
-				$this->db->set('puntos', $punto);							
-        		$this->db->where('tid', $idfactura);
-        		$this->db->update('invoices');			
-		}
-		}//abre en line 963
-		
+                $data2['qty']=$punto;
+                $valorit = $x*$punto;
+                $data2['subtotal']=$valorit;            
+                $this->db->insert('invoice_items',$data2);
+            //actualizar factura
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+                $this->db->set('subtotal', $factura->subtotal+$valorit);
+                $this->db->set('total', $factura->total+$valorit);
+                $this->db->set('items', $factura->items+1);
+                $this->db->set('puntos', $factura->puntos+$punto);                          
+                $this->db->where('tid', $idfactura);
+                $this->db->update('invoices');          
+        }
+        if($ticket->detalle=="Servicio Adicional"){
+            $adnint=$this->db->get_where('products',array('product_name'=>$temporal->internet))->row();
+            $adntv=$this->db->get_where('products',array('product_name'=>$temporal->tv))->row();
+            if($temporal->internet!='no'){
+                    $data_serv['tid_invoice']=$idfactura;
+                    $data_serv['pid']=$adnint->pid;
+                    $data_serv['valor']=1;
+                    $data_serv['subtotal']=$adnint->product_price;
+                    $data_serv['total']=$adnint->product_price;
+                    $this->db->insert("servicios_adicionales",$data_serv);
+            }
+            if($temporal->tv!='no'){
+                    $data_serv['tid_invoice']=$idfactura;
+                    $data_serv['pid']=$adntv->pid;
+                    $data_serv['valor']=1;
+                    $data_serv['subtotal']=$adntv->product_price;
+                    $data_serv['total']=$adntv->product_price;
+                    $this->db->insert("servicios_adicionales",$data_serv);
+            }
+                    
+        }
+        }//abre en line 963
+        
         $dataz['status']=$status;
         $dataz['fecha_final']=$fecha_final;
         if ($this->db->update('tickets',$dataz,array('idt'=>$tid))){
-			//cambio color al finalizar
-			$this->db->set('color', '#a3a3a3');
-			$this->db->set('end', $fecha_final);
-        	$this->db->where('idorden', $ticket->codigo);
-        	$this->db->update('events');
+            if ($status=='Pendiente'){
+                $color = '#4CB0CB';
+                $this->db->set('start', date("Y-m-d H:i:s"));
+                $this->db->set('end', date("Y-m-d H:i:s"));
+            }else{
+                $color = '#a3a3a3';
+                $this->db->set('end', $fecha_final);
+            }
+            //cambio color al finalizar
+            $this->db->set('color', $color);
+            
+            $this->db->where('idorden', $ticket->codigo);
+            $this->db->update('events');
             $data_h['modulo']="Tickets";
                 $data_h['accion']="Editando evento ticket linea 1630";
                 $data_h['id_usuario']=$this->aauth->get_user()->id;
@@ -1816,19 +2013,18 @@ $x=0;
                 $data_h['tabla']="events";
                 $data_h['nombre_columna']="idorden";
                 $this->db->insert("historial_crm",$data_h);
-		};
-				
-		
-		
-		
+        };
+                
+        
+        
+        
         echo json_encode(array('msg1'=>$msg1,'tid'=>$data['tid'],'status' => 'Success', 'message' =>
             $this->lang->line('UPDATED'), 'pstatus' => $status));
-		}//abre 676
+        }//abre 676
     }
-		
-	}
+        
+    }
 
-	  
 	
 	public function addticket()
     {
