@@ -2678,5 +2678,43 @@ if($total_tax>0){
                 echo "Realizado";
         }
     }
+	public function eliminarfacturas()
+    {
+		
+		// Paso 1: Obtén los IDs de las facturas que cumplen con las condiciones
+		$this->db->select('tid');
+		$this->db->from('invoices');
+		//$this->db->where('status', 'canceled');
+		//$this->db->where('promo !=', 0);
+		$this->db->where('notes', '.');
+		$this->db->where('invoicedate', '2023-11-30');
+		//$this->db->where('tid', 211204);
+		$query = $this->db->get();
+		$factura_ids = $query->result_array();
+
+		// Paso 2: Elimina los productos relacionados con las facturas obtenidas en el Paso 1
+		if (!empty($factura_ids)) {
+			$factura_ids = array_column($factura_ids, 'tid');
+			$this->db->where_in('tid', $factura_ids);
+			if ($this->db->delete('invoice_items')){
+				$this->db->where('invoicedate', '22023-11-30');
+				$this->db->where('notes', '.');
+				$this->db->delete('invoices');
+				/*$this->db->set('status', 'paid');
+				$this->db->set('ron', 'Activo');
+				$this->db->set('total', 0);
+				$this->db->set('subtotal', 0);
+				$this->db->set('tax', 0);
+				$this->db->set('discount', 0);
+				$this->db->where('status', 'canceled');
+				$this->db->where('promo !=', 0);
+				$this->db->like('notes', 'gratis');
+				$this->db->update('invoices');*/
+			} 			
+			
+		}
+				
+        
+    }
 
 }
