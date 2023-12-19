@@ -138,6 +138,7 @@
                 <thead>
                 <tr>
 
+                    <th>Codigo</th>
                     <th><?php echo $this->lang->line('Date') ?></th>
                     <th><?php echo $this->lang->line('') ?>Caja</th>
                     <th><?php echo $this->lang->line('Debit') ?></th>
@@ -157,6 +158,7 @@
 
                 <tfoot>
                 <tr>
+                    <th>Codigo</th>
                     <th><?php echo $this->lang->line('Date') ?></th>
                     <th><?php echo $this->lang->line('') ?>Caja</th>
                     <th><?php echo $this->lang->line('Debit') ?></th>
