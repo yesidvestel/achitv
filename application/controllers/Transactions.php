@@ -180,6 +180,7 @@ class Transactions extends CI_Controller
     
     //define column headers
     $headers = array(
+        'Codigo' => 'integer', 
         'Fecha' => 'string', 
         'Cuenta' => 'string',
 		'Valor' => 'integer',
@@ -216,13 +217,14 @@ class Transactions extends CI_Controller
 ['font'=>'Arial','font-style'=>'bold','font-size'=>'12',"fill"=>"#BDD7EE",'halign'=>'center'],
 ['font'=>'Arial','font-style'=>'bold','font-size'=>'12',"fill"=>"#BDD7EE",'halign'=>'center'],
 ['font'=>'Arial','font-style'=>'bold','font-size'=>'12',"fill"=>"#BDD7EE",'halign'=>'center'],
+['font'=>'Arial','font-style'=>'bold','font-size'=>'12',"fill"=>"#BDD7EE",'halign'=>'center'],
 ));
     
     //write rows to sheet1
 	
     foreach ($lista_creditos as $key => $creditos) {
 		$fecha = date("d/m/Y",strtotime($creditos->date));
-            $writer->writeSheetRow('Creditos ',array($fecha,$creditos->account,$creditos->credit,$creditos->payer,$creditos->cat,$creditos->tid,$creditos->note,$creditos->method));
+            $writer->writeSheetRow('Creditos ',array($creditos->id,$fecha,$creditos->account,$creditos->credit,$creditos->payer,$creditos->cat,$creditos->tid,$creditos->note,$creditos->method));
         
     }
         
@@ -1654,6 +1656,7 @@ $this->load->model('customers_model', 'customers');
             $no++;
             $row = array();
             $pid = $prd->id;
+            $row[] = $pid;
             $row[] = dateformat($prd->date);
             $row[] = $prd->account;
             $row[] = amountFormat($prd->debit);

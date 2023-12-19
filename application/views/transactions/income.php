@@ -137,6 +137,7 @@
             <table id="trans_table" class="display" cellspacing="0" width="100%">
                 <thead>
                 <tr>
+                    <th>Codigo</th>
                     <th><?php echo $this->lang->line('Date') ?></th>
                     <th><?php echo $this->lang->line('Account') ?></th>
                     <th><?php echo $this->lang->line('Debit') ?></th>
@@ -156,6 +157,7 @@
 
                 <tfoot>
                 <tr>
+                    <th>Codigo</th>
                     <th><?php echo $this->lang->line('Date') ?></th>
                     <th><?php echo $this->lang->line('Account') ?></th>
                     <th><?php echo $this->lang->line('Debit') ?></th>
