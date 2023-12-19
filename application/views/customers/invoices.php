@@ -175,7 +175,7 @@
                             <div class="input-group">
                                 <div class="input-group-addon"><span class="icon-calendar4"
                                                                      aria-hidden="true"></span></div>
-                                <input type="text" class="form-control required"
+                                <input type="text" class="form-control "
                                        placeholder="Billing Date" name="paydate"
                                        data-toggle="datepicker" readonly>
                             </div>
