@@ -525,6 +525,7 @@ Achitel SAS comprometidos por el progreso del pueblo.</i></b><br>
                                 <?=$company->cname.", Nit: ".$company->taxid." - Telefono : ".$company->phone." - Dir : ".$company->address.", Sede ".$sede ?>
                             </p>
                         </div>
+					<div id="logo-div"> <img id="logo" src="<?=FCPATH."userfiles/company/ofertas.png"  ?>"></div>
 <!-- Fin Factura-->
 
 
