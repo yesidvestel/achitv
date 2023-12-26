@@ -2687,7 +2687,7 @@ if($total_tax>0){
 		//$this->db->where('status', 'canceled');
 		//$this->db->where('promo !=', 0);
 		$this->db->where('notes', '.');
-		$this->db->where('invoicedate', '2023-11-27');
+		$this->db->where('invoicedate', '2023-12-22');
 		//$this->db->where('tid', 211204);
 		$query = $this->db->get();
 		$factura_ids = $query->result_array();
@@ -2697,7 +2697,7 @@ if($total_tax>0){
 			$factura_ids = array_column($factura_ids, 'tid');
 			$this->db->where_in('tid', $factura_ids);
 			if ($this->db->delete('invoice_items')){
-				$this->db->where('invoicedate', '2023-11-27');
+				$this->db->where('invoicedate', '2023-12-22');
 				$this->db->where('notes', '.');
 				$this->db->delete('invoices');
 				/*$this->db->set('status', 'paid');
