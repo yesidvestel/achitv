@@ -37,13 +37,19 @@ class SiigoAPI
      */
     public function getAuth($cuenta)
     {
-        $cuentaVESGATV=array("username"=>"navarroarcecp@gmail.com","access_key"=>"MDY1MWE2MjctNTk4NS00N2JmLTlmOTQtNjE0Zjg3ZTQwMjcxOmY8ajIoITJUTk4=");
-        $cuentaVESGATELECOMUNICACIONES=array("username"=>"navarroarcecp@gmail.com","access_key"=>"Yjk2NTI0ZDQtZDJjYi00MDkxLWIzODktZTAxNWY3OTZkNWQ1OnR7dHUhKS5NN0Y=");
+        $cuentaVESGATV=array("username"=>"contabilidad@vestel.com.co","access_key"=>"MDc2YzZlMzAtZGI2Yy00OGFkLWFjZjktZTNlNGUxNDZkODk5Ok9SUDkhOXowQ0E=");
+        $cuentaVESGATELECOMUNICACIONES=array("username"=>"contabilidad@vestel.com.co","access_key"=>"YjMzZWY4MzYtMDMxMC00MjBlLTg0NzItZTAzYzFjMDcwMTc2OjQpcTh0Rk8hNkI=");
         $cuentaData=array();
-        if($cuenta==1){
-            $cuentaData=$cuentaVESGATV;
+       if(count($_SESSION['array_accesos_siigo'])==2){
+            if($cuenta==1){
+                $cuentaData=$_SESSION['array_accesos_siigo'][0];//tv
+                 //$cuentaData=$cuentaVESGATV;
+            }else{
+                $cuentaData=$_SESSION['array_accesos_siigo'][1];//internet
+                 //$cuentaData=$cuentaVESGATELECOMUNICACIONES;
+            }    
         }else{
-            $cuentaData=$cuentaVESGATELECOMUNICACIONES;
+                $cuentaData=$_SESSION['array_accesos_siigo'][0];//todo
         }
        // _log("Obteniendo autorización token"); //descomentar para depurar
         $postFields = [
@@ -55,7 +61,7 @@ class SiigoAPI
                 "Content-Type: application/json",
                 "Partner-Id: savescrmintegrationsiigo",
             ],
-            CURLOPT_SSL_VERIFYPEER=>false,
+            //CURLOPT_SSL_VERIFYPEER=>false,
         ];
 
         list($httpCode, $resp) = $this->cReq->curlPost(
@@ -68,23 +74,29 @@ class SiigoAPI
         }
 
         $decodedResp = json_decode($resp, true);
-        $this->token = $decodedResp['access_token'];
+        //$_SESSION['siigo_token'] = $decodedResp['access_token'];
 
        // _log("Obtención de autorización terminada"); //descomentar para depurar
-
-        return $resp;
+//$this->db->update("config_facturacion_electronica",array("tocken"=>$decodedResp['access_token']),array("id"=>1));
+        return $decodedResp;
     }
 
     public function getAuth2($cuenta)
     {
-        $cuentaVESGATV=array("username"=>"navarroarcecp@gmail.com","access_key"=>"MDY1MWE2MjctNTk4NS00N2JmLTlmOTQtNjE0Zjg3ZTQwMjcxOmY8ajIoITJUTk4=");
-        $cuentaVESGATELECOMUNICACIONES=array("username"=>"navarroarcecp@gmail.com","access_key"=>"Yjk2NTI0ZDQtZDJjYi00MDkxLWIzODktZTAxNWY3OTZkNWQ1OnR7dHUhKS5NN0Y=");
-       
+        $cuentaVESGATV=array("username"=>"contabilidad@vestel.com.co","access_key"=>"MDc2YzZlMzAtZGI2Yy00OGFkLWFjZjktZTNlNGUxNDZkODk5Ok9SUDkhOXowQ0E=");
+        $cuentaVESGATELECOMUNICACIONES=array("username"=>"contabilidad@vestel.com.co","access_key"=>"YjMzZWY4MzYtMDMxMC00MjBlLTg0NzItZTAzYzFjMDcwMTc2OjQpcTh0Rk8hNkI=");
         $cuentaData=array();
-        if($cuenta==1){
-            $cuentaData=$cuentaVESGATV;
+        
+        if(count($_SESSION['array_accesos_siigo'])==2){
+            if($cuenta==1){
+                $cuentaData=$_SESSION['array_accesos_siigo'][0];//tv
+                 //$cuentaData=$cuentaVESGATV;
+            }else{
+                $cuentaData=$_SESSION['array_accesos_siigo'][1];//internet
+                 //$cuentaData=$cuentaVESGATELECOMUNICACIONES;
+            }    
         }else{
-            $cuentaData=$cuentaVESGATELECOMUNICACIONES;
+                $cuentaData=$_SESSION['array_accesos_siigo'][0];//todo
         }
         //_log("Obteniendo autorización token"); //descomentar para depurar
         $postFields = [
@@ -96,7 +108,7 @@ class SiigoAPI
                 "Content-Type: application/json",
                 "Partner-Id: savescrmintegrationsiigo",
             ],
-            CURLOPT_SSL_VERIFYPEER=>false,
+            //CURLOPT_SSL_VERIFYPEER=>false,
         ];
 
         list($httpCode, $resp) = $this->cReq->curlPost(
@@ -109,11 +121,11 @@ class SiigoAPI
         }
 
         $decodedResp = json_decode($resp, true);
-        $this->token2 = $decodedResp['access_token'];
-
+        //$_SESSION['siigo_token2'] = $decodedResp['access_token'];
+//$this->db->update("config_facturacion_electronica",array("tocken"=>$decodedResp['access_token']),array("id"=>2));
         //_log("Obtención de autorización terminada"); //descomentar para depurar
 
-        return $resp;
+        return $decodedResp;
     }
 
 
@@ -125,23 +137,23 @@ class SiigoAPI
      * 
      * @return array Listado de facturas que se encuentran en la página indicada
      */
-     public function getInvoices($page,$fecha)
+    public function getInvoices($page,$fecha)
     {
         $curl = curl_init();
 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);//linea importante cuando no funciona
 curl_setopt_array($curl, array(
-  CURLOPT_URL => 'https://api.siigo.com/v1/invoices?page='.$page.'&created_start='.$fecha,
+  CURLOPT_URL => 'http://api.siigo.com/v1/invoices?page='.$page.'&created_start='.$fecha,
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_ENCODING => '',
   CURLOPT_MAXREDIRS => 10,
   CURLOPT_TIMEOUT => 0,
   CURLOPT_FOLLOWLOCATION => true,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2,
   CURLOPT_CUSTOMREQUEST => 'GET',
   CURLOPT_HTTPHEADER => array(
     'Content-Type: application/json',
     "Partner-Id: savescrmintegrationsiigo",
-    'Authorization: Bearer '.$this->token
+    'Authorization: Bearer '.$_SESSION['siigo_token']
   ),
 ));
 
@@ -151,10 +163,94 @@ curl_close($curl);
 return $response;
 
     }
+     public function getInvoicesCreditoOttis($customer_cc,$date_start)
+    {//https://api.siigo.com/v1/invoices?customer_identification=51859748&date_start=2023-11-05
+        $curl = curl_init();
+//curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);//linea importante cuando no funciona
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://api.siigo.com/v1/invoices?customer_identification='.$customer_cc.'&date_start='.$date_start,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2,
+  CURLOPT_CUSTOMREQUEST => 'GET',
+  CURLOPT_HTTPHEADER => array(
+    'Content-Type: application/json',
+    "Partner-Id: savescrmintegrationsiigo",
+    'Authorization: Bearer '.$_SESSION['siigo_token']
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+return $response;
+
+    }
+public function getInvoicesCreditoOttis2($customer_cc,$date_start,$tokenx)
+    {
+          $url = 'https://api.siigo.com/v1/invoices?customer_identification='.$customer_cc.'&date_start='.$date_start;
+
+    $cmd = 'curl -X GET -H "Content-Type: application/json" ' .
+           '-H "Partner-Id: savescrmintegrationsiigo" ' .
+           '-H "Authorization: Bearer ' . $tokenx . '" ' .
+           '"' . $url . '"';
+
+    //echo $cmd . "<br>";
+
+    $output = exec($cmd);
+    return $output;
+    }
+
+     public function updateInvoice($invoiceData,$id,$cuenta) {
+        if($cuenta==1){
+            $tokenx=$_SESSION['siigo_token'];
+        }else{
+            $tokenx=$_SESSION['siigo_token2'];
+        }
+       $ch = curl_init();
+        //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_URL, "$this->urlBase/invoices/".$id);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_HEADER, FALSE);
+curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $invoiceData);
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+          "Content-Type: application/json",
+          "Partner-Id: savescrmintegrationsiigo",
+          "Authorization: Bearer $tokenx"
+        ));
+
+        $response = curl_exec($ch);
+        //var_dump($response);
+        curl_close($ch);
+    }
+        public function updateInvoice2($invoiceData,$id,$tocken) {
+ $url = "$this->urlBase/invoices/".$id;
+    $payload = $invoiceData;
+
+    $cmd = 'curl -X PUT -H "Content-Type: application/json" ' .
+           '-H "Partner-Id: savescrmintegrationsiigo" ' .
+           '-H "Authorization: Bearer ' . $tocken . '" ' .
+           '--data \'' . $payload . '\' ' .
+           '"' . $url . '"';
+
+    
+
+    $output = exec($cmd);
+        return $output;
+    }
+
+
     public function deleteInvoice($id)
     {
        $curl = curl_init();
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);//linea importante cuando no funciona
+//curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);//linea importante cuando no funciona
 curl_setopt_array($curl, array(
   CURLOPT_URL => 'https://api.siigo.com/v1/invoices/'.$id,
   CURLOPT_RETURNTRANSFER => true,
@@ -162,12 +258,12 @@ curl_setopt_array($curl, array(
   CURLOPT_MAXREDIRS => 10,
   CURLOPT_TIMEOUT => 0,
   CURLOPT_FOLLOWLOCATION => true,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2,
   CURLOPT_CUSTOMREQUEST => 'DELETE',
   CURLOPT_HTTPHEADER => array(
     'Content-Type: application/json',
     "Partner-Id: savescrmintegrationsiigo",
-    'Authorization: Bearer '.$this->token
+    'Authorization: Bearer '.$_SESSION['siigo_token']
   ),
 ));
 
@@ -187,35 +283,55 @@ echo $response;
      */
     public function getCustomer($document,$cuenta)
     {
-    if($cuenta==1){
-        $tokenx=$this->token;
+        $tokenx=$cuenta;
+
+    /*if($cuenta==1){
+        //$tokenx=$_SESSION['siigo_token'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+        $tokenx=$ob1->tocken;
     }else{
-        $tokenx=$this->token2;
-    }
+        //$tokenx=$_SESSION['siigo_token2'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+        $tokenx=$ob1->tocken;
+    }*/
         //_log("Consultando facturas");
         //$this->getAuth($cuenta);
         $url = "{$this->urlBase}/customers?identification=".$document;
         $i = 0;
-        do {
+       // do {
             $cOptions = [
                 CURLOPT_HTTPHEADER => [
                     "Content-Type: application/json",
                     "Partner-Id: savescrmintegrationsiigo",
                     "Authorization: Bearer $tokenx",
                 ],
-                CURLOPT_SSL_VERIFYPEER=>false,
+                //CURLOPT_SSL_VERIFYPEER=>false,
             ];
             list($httpCode, $resp) = $this->cReq->curlGet($url, [], $cOptions);
             if ($httpCode === 401) {
                 //$this->getAuth($cuenta);
             }
             $i += 1;
-        } while ($i < 2 && $httpCode === 401);
+       // } while ($i < 2 && $httpCode === 401);
         //_log("Consulta de facturas finalizada [$httpCode]");
 
         return json_decode($resp, true);
     }
 
+public function getCustomer1($document,$tokenx)
+    {
+          $url = "https://api.siigo.com/v1/customers?identification=" . $document;
+
+    $cmd = 'curl -X GET -H "Content-Type: application/json" ' .
+           '-H "Partner-Id: savescrmintegrationsiigo" ' .
+           '-H "Authorization: Bearer ' . $tokenx . '" ' .
+           '"' . $url . '"';
+
+    //echo $cmd . "<br>";
+
+    $output = exec($cmd);
+    return json_decode($output, true);
+    }
     /**
      * Guarda una factura
      * 
@@ -225,17 +341,21 @@ echo $response;
      * @return string Respuesta enviada por el servidor
      */
     public function saveCustomer($invoiceData,$cuenta) {
-
-        if($cuenta==1){
-        $tokenx=$this->token;
+  $tokenx=$cuenta;
+        /*if($cuenta==1){
+        //$tokenx=$_SESSION['siigo_token'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+        $tokenx=$ob1->tocken;
     }else{
-        $tokenx=$this->token2;
-    }
+        //$tokenx=$_SESSION['siigo_token2'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+        $tokenx=$ob1->tocken;
+    }*/
         //_log("Enviando factura"); //descomentar para depurar
         $url = "{$this->urlBase}/customers";
         $i = 0;
         //$this->getAuth($cuenta);
-        do {
+        //do {
             $cOptions = [
                 CURLOPT_HTTPHEADER => [
                     "Content-Type: application/json",
@@ -243,7 +363,7 @@ echo $response;
                     "Authorization: Bearer $tokenx",
                     
                 ],
-                CURLOPT_SSL_VERIFYPEER=>false,
+                //CURLOPT_SSL_VERIFYPEER=>false,
             ];
 
             list($httpCode, $resp)= $this->cReq->curlPost($url, $invoiceData, $cOptions);
@@ -251,24 +371,40 @@ echo $response;
                // $this->getAuth($cuenta);
             }
             $i += 1;
-        } while ($i < 2 && $httpCode === 401);
+        //} while ($i < 2 && $httpCode === 401);
         //_log("Envío de factura finalizado [$httpCode]"); //descomentar para depurar
-        
+
         return array('respuesta' => $resp,"httpCode"=>$httpCode );
+    }
+
+    public function saveCustomer1($invoiceData,$tocken) {
+ $url = "https://api.siigo.com/v1/customers";
+    $payload = $invoiceData;
+
+    $cmd = 'curl -X POST -H "Content-Type: application/json" ' .
+           '-H "Partner-Id: savescrmintegrationsiigo" ' .
+           '-H "Authorization: Bearer ' . $tocken . '" ' .
+           '--data \'' . $payload . '\' ' .
+           '"' . $url . '"';
+
+    
+
+    $output = exec($cmd);
+        return $output;
     }
 
     public function updateCustomer($invoiceData,$id,$cuenta) {
         if($cuenta==1){
-            $tokenx=$this->token;
+            $tokenx=$_SESSION['siigo_token'];
         }else{
-            $tokenx=$this->token2;
+            $tokenx=$_SESSION['siigo_token2'];
         }
        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+       // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_URL, "$this->urlBase/customers/".$id);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_HEADER, FALSE);
-
+curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $invoiceData);
@@ -276,7 +412,7 @@ echo $response;
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
           "Content-Type: application/json",
           "Partner-Id: savescrmintegrationsiigo",
-          "Authorization: Bearer $this->token"
+          "Authorization: Bearer $tokenx"
         ));
 
         $response = curl_exec($ch);
@@ -284,16 +420,21 @@ echo $response;
     }
 
     public function saveInvoice($invoiceData,$cuenta) {
-        if($cuenta==1){
-        $tokenx=$this->token;
+        $tocken=$cuenta;
+        /*if($cuenta==1){
+        //$tokenx=$_SESSION['siigo_token'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+        $tokenx=$ob1->tocken;
     }else{
-        $tokenx=$this->token2;
-    }
+        //$tokenx=$_SESSION['siigo_token2'];
+        $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+        $tokenx=$ob1->tocken;
+    }*/
         //_log("Enviando factura"); //descomentar para depurar
         $url = "{$this->urlBase}/invoices";
         $i = 0;
         //$this->getAuth($cuenta);
-        do {
+        //do {
             $cOptions = [
                 CURLOPT_HTTPHEADER => [
                     "Content-Type: application/json",
@@ -301,7 +442,7 @@ echo $response;
                     "Authorization: Bearer $tokenx",
                     
                 ],
-                CURLOPT_SSL_VERIFYPEER=>false,
+                //CURLOPT_SSL_VERIFYPEER=>false,
             ];
 
             list($httpCode, $resp)= $this->cReq->curlPost($url, $invoiceData, $cOptions);
@@ -309,31 +450,70 @@ echo $response;
                // $this->getAuth($cuenta);
             }
             $i += 1;
-        } while ($i < 4 && ($httpCode === 401 ));
+        //} while ($i < 4 && ($httpCode === 401 ));
         //_log("Envío de factura finalizado [$httpCode]"); //descomentar para depurar
 
         return array('respuesta' => $resp,"httpCode"=>$httpCode );
     }
+    public function saveInvoice2($invoiceData,$tokenx) {
+       $url = "https://api.siigo.com/v1/invoices";
+    $payload = $invoiceData;
+
+    $cmd = 'curl -X POST -H "Content-Type: application/json" ' .
+           '-H "Partner-Id: savescrmintegrationsiigo" ' .
+           '-H "Authorization: Bearer ' . $tokenx . '" ' .
+           '--data \'' . $payload . '\' ' .
+           '"' . $url . '"';
+
+    
+
+    $output = exec($cmd);
+        return $output;
+    }
 
     public function accionar($api,$invoiceData,$cuenta){
-        //ob_end_clean();
+        
         //var_dump($api->getInvoices(1));
         //$invoiceData = file_get_contents(dirname(__FILE__) . '/siigo_folder/invoice.json');
-        //var_dump($invoiceData);
         $respuesta=$api->saveInvoice($invoiceData,$cuenta);
         /*echo "<br>";
         var_dump($respuesta);
         echo "<br>";
         
         var_dump($respuesta['httpCode']);*/
+        //var_dump($respuesta);
         try {
-            if($respuesta['httpCode']==200 ||$respuesta['httpCode']==100 || $respuesta['httpCode']==0 || $respuesta['httpCode']==201){//100            
+            if($respuesta['httpCode']==200 ||$respuesta['httpCode']==100 || $respuesta['httpCode']==0 || $respuesta['httpCode']==201 || $respuesta['httpCode']==409){//100            
                 return array('respuesta' =>$respuesta['respuesta'],"mensaje" =>"Factura Guardada");
             }else{
                 return array('respuesta' =>$respuesta['respuesta'],"mensaje" =>"Ubo algun error");//falta imprimir en un alter el error
             }    
         } catch (Exception $e) {
                return array('respuesta' =>$respuesta['respuesta'],"mensaje" =>"Ubo algun error");//falta imprimir en un alter el error
+        }
+        
+        
+        
+    }
+    public function accionar2($api,$invoiceData,$cuenta){
+        
+        //var_dump($api->getInvoices(1));
+        //$invoiceData = file_get_contents(dirname(__FILE__) . '/siigo_folder/invoice.json');
+        
+        
+        /*
+        var_dump($respuesta['httpCode']);*/
+        //var_dump($respuesta);
+        try {
+            $respuesta=$api->saveInvoice2($invoiceData,$cuenta);
+            if(strpos(strtolower($respuesta),"error" )!==false && strpos(strtolower($respuesta),"duplicated_document" )===false){//100            
+                return array('respuesta' =>$respuesta,"mensaje" =>"Ubo algun error");//falta imprimir en un alter el error
+            }else{
+                return array('respuesta' =>$respuesta,"mensaje" =>"Factura Guardada");
+                
+            }    
+        } catch (Exception $e) {
+               return array('respuesta' =>$respuesta,"mensaje" =>"Ubo algun error");//falta imprimir en un alter el error
         }
         
         

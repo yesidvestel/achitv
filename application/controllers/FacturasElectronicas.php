@@ -215,12 +215,14 @@ $this->load->model("customers_model","customers");
             $dataApiTV->observations="Estrato : ".$customer->estrato;
             $dataApiTV->payments[0]->id="3943";
 
-            $consulta_siigo1=$api->getCustomer($customer->documento,1);
-           //var_dump($consulta_siigo1);
-            if($consulta_siigo1['pagination']['total_results']==0){
-                    $api->saveCustomer($json_customer,1);//para crear cliente en siigo si no existe
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+            $consulta_siigo1=$api->getCustomer1($customer->documento,$ob1->tocken);
+           
+            
+            if(isset($consulta_siigo1) && isset($consulta_siigo1['pagination']) && isset($consulta_siigo1['pagination']['total_results']) && $consulta_siigo1['pagination']['total_results']==0){
+                    $api->saveCustomer1($json_customer,$ob1->tocken);//para crear cliente en siigo si no existe
             }else{
-                    $api->updateCustomer($json_customer,$consulta_siigo1['results'][0]['id'],1);//para acturalizar cliente en siigo 
+                    //$api->updateCustomer($json_customer,$consulta_siigo1['results'][0]['id'],1);//para acturalizar cliente en siigo 
             }
         }
         if($dataApiNET!=null){
@@ -234,17 +236,18 @@ $this->load->model("customers_model","customers");
             $dataApiNET->observations="Estrato : ".$customer->estrato;
             $dataApiNET->payments[0]->id="5797";
 
-            $consulta_siigo1=$api->getCustomer($customer->documento,2);
+             $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+            $consulta_siigo1=$api->getCustomer1($customer->documento,$ob1->tocken);
           
             
-            if($consulta_siigo1['pagination']['total_results']==0){
+            if(isset($consulta_siigo1) && isset($consulta_siigo1['pagination']) && isset($consulta_siigo1['pagination']['total_results']) && $consulta_siigo1['pagination']['total_results']==0){
                     $json_customer=json_decode($json_customer);
                     $json_customer->related_users->seller_id=647;
                     $json_customer->related_users->collector_id=647;
                     $json_customer->contacts[0]->email="facturacionachi2022@gmail.com";
                     $json_customer=json_encode($json_customer);
                     //$json_customer=str_replace("321", "282", subject)
-                    $api->saveCustomer($json_customer,2);//para crear cliente en siigo si no existe
+                    $api->saveCustomer1($json_customer,$ob1->tocken);//para crear cliente en siigo si no existe
             }else{
                     $json_customer=json_decode($json_customer);
                     $json_customer->related_users->seller_id=647;
@@ -346,12 +349,16 @@ $this->load->model("customers_model","customers");
         //var_dump($dataApiTV);
         $retorno=array("mensaje"=>"No");
         if($dataApiTV!=null && $dataApiTV!="null"){
-            $retorno = $api->accionar($api,$dataApiTV,1);     
-            if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-                $retorno = $api->accionar($api,$dataApiNET,2);     
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+            $retorno = $api->accionar2($api,$dataApiTV,$ob1->tocken); 
+            
+            if($dataApiNET!=null && $dataApiNET!="null"){
+                $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+                $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);  
             }
-        }else if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-            $retorno = $api->accionar($api,$dataApiNET,2);     
+        }else if($dataApiNET!=null && $dataApiNET!="null"){
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+            $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);         
         }
 
         if($retorno['mensaje']=="Factura Guardada"){
@@ -449,14 +456,17 @@ $this->load->model("customers_model","customers");
     }
     public function obtener_lista_usuarios_a_facturar(){
         $numero_total;
+        $this->facturas_electronicas->cargar_configuraciones_para_facturar();
         $caja1=$this->db->get_where('accounts',array('id' =>$_POST['pay_acc']))->row();
         $dateTime=new DateTime($_POST['sdate']);
         
         
         $api = new SiigoAPI();
-        $api->getAuth(1);
-        $api->getAuth2(2);
-        $_SESSION['api_siigo']=$api;
+        $v1=$api->getAuth(1);
+        $this->db->update("config_facturacion_electronica",array("tocken"=>$v1['access_token']),array("id"=>1));
+        $v1=$api->getAuth2(2);
+        $this->db->update("config_facturacion_electronica",array("tocken"=>$v1['access_token']),array("id"=>2));
+        //$_SESSION['api_siigo']=$api;
         $_SESSION['errores']=array();
 
         $customers_t = $this->db->query("select id from customers where (usu_estado='Activo' or usu_estado='Compromiso') and (gid ='".$caja1->sede."' and facturar_electronicamente='1')")->result_array();//and id=8241
@@ -501,6 +511,7 @@ set_time_limit(150);
         ini_set ( 'max_execution_time', 150);
             $servicios=$this->customers->servicios_detail($id_customer);
                 $puntos = $this->customers->due_details($id_customer);
+                $api = new SiigoAPI();
                 //guardare en un array la variable servicios = combo o tv o internet y la variable puntos con no o el numero de puntos
                 // el orden es prima los servicios que tiene actualmente como hay seleccion por el admin si el servicio existe se toma la seleccion si no se omite,
                 //°° IMPORTANTE °°  por otro lado si agrega servicios y estan seteadas las opciones con un solo servicio ejemplo, el admin debe de setear las opciones de facturacion electronica porque generara segun este seteado
@@ -537,7 +548,7 @@ set_time_limit(150);
                     
                    
             
-                        $creo=$this->facturas_electronicas->generar_factura_customer_para_multiple($datos,$_SESSION['api_siigo']);
+                        $creo=$this->facturas_electronicas->generar_factura_customer_para_multiple($datos,$api);
                         //$creo=array("status"=>true);
                         //sleep(7);
                         if($creo['status']==true){
