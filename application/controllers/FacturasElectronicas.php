@@ -88,6 +88,7 @@ $this->load->model("customers_model","customers");
     }
     public function guardar(){
         $this->load->library('SiigoAPI');
+        $this->facturas_electronicas->cargar_configuraciones_para_facturar();
         $api = new SiigoAPI();
         $api->getAuth(1);
         $api->getAuth2(2);
@@ -440,6 +441,7 @@ $this->load->model("customers_model","customers");
         $head['title'] = "Generar Facturas Electronicas";
         $head['usernm'] = $this->aauth->get_user()->username;
         $data['accounts'] = $this->transactions_model->acc_list();
+        $this->facturas_electronicas->cargar_configuraciones_para_facturar();
         $this->load->view('fixed/header', $head);
         $this->load->view('facturas_electronicas/configuraciones',$data);
         $this->load->view('fixed/footer');       
