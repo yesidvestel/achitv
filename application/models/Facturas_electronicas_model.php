@@ -223,12 +223,13 @@ class Facturas_electronicas_model extends CI_Model
             $dataApiTV->observations="Estrato : ".$customer->estrato;
             $dataApiTV->payments[0]->id="3943";
 
-            $consulta_siigo1=$api->getCustomer($customer->documento,1);
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+            $consulta_siigo1=$api->getCustomer1($customer->documento,$ob1->tocken);
            
             
-            if($consulta_siigo1['pagination']['total_results']==0){
+              if(isset($consulta_siigo1) && isset($consulta_siigo1['pagination']) && isset($consulta_siigo1['pagination']['total_results']) && $consulta_siigo1['pagination']['total_results']==0){
                 
-                    $api->saveCustomer($json_customer,1);//para crear cliente en siigo si no existe
+                    $api->saveCustomer1($json_customer,$ob1->tocken);//para crear cliente en siigo si no existe
             }else{
 
                 //var_dump($json_customer);
@@ -248,17 +249,18 @@ class Facturas_electronicas_model extends CI_Model
             $dataApiNET->observations="Estrato : ".$customer->estrato;
             $dataApiNET->payments[0]->id="5797";
 
-            $consulta_siigo1=$api->getCustomer($customer->documento,2);
+           $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+            $consulta_siigo1=$api->getCustomer1($customer->documento,$ob1->tocken);
           
             
-            if($consulta_siigo1['pagination']['total_results']==0){
+            if(isset($consulta_siigo1) && isset($consulta_siigo1['pagination']) && isset($consulta_siigo1['pagination']['total_results']) && $consulta_siigo1['pagination']['total_results']==0){
                     $json_customer=json_decode($json_customer);
                     $json_customer->related_users->seller_id=647;
                     $json_customer->related_users->collector_id=647;
                     $json_customer->contacts[0]->email="facturacionachi2022@gmail.com";
                     $json_customer=json_encode($json_customer);
                     //$json_customer=str_replace("321", "282", subject)
-                    $api->saveCustomer($json_customer,2);//para crear cliente en siigo si no existe
+                     $api->saveCustomer1($json_customer,$ob1->tocken);//para crear cliente en siigo si no existe
             }else{
                 /*$json_customer=json_decode($json_customer);
                     $json_customer->related_users->seller_id=647;
@@ -359,13 +361,19 @@ class Facturas_electronicas_model extends CI_Model
         $dataApiNET=json_encode($dataApiNET); 
         //var_dump($dataApiTV);
         $retorno=array("mensaje"=>"No");
-        if($dataApiTV!=null && $dataApiTV!="null"){
-            $retorno = $api->accionar($api,$dataApiTV,1);     
+         if($dataApiTV!=null && $dataApiTV!="null"){
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+            $retorno = $api->accionar2($api,$dataApiTV,$ob1->tocken);   
+             
             if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-                $retorno = $api->accionar($api,$dataApiNET,2);     
+                $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+                $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
+              
             }
         }else if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-            $retorno = $api->accionar($api,$dataApiNET,2);     
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+            $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
+          
         }
         
 
@@ -395,6 +403,19 @@ class Facturas_electronicas_model extends CI_Model
             $retor=array("status"=>false,'respuesta'=>$retorno['respuesta']);
             return $retor;
         }
+    }
+
+     public function cargar_configuraciones_para_facturar(){
+        $list=$this->db->get_where("config_facturacion_electronica")->result_array();
+        $data_ses=array();
+        if($list[0]['nombre']=="Todo"){
+            $data_ses[0]=array("username"=>$list[0]['username'],"access_key"=>$list[0]['access_key']);
+        }else{
+            $data_ses[0]=array("username"=>$list[0]['username'],"access_key"=>$list[0]['access_key'],"nombre"=>$list[0]['nombre']);
+            $data_ses[1]=array("username"=>$list[1]['username'],"access_key"=>$list[1]['access_key'],"nombre"=>$list[1]['nombre']);
+
+        }
+        $_SESSION['array_accesos_siigo']=$data_ses;
     }
 
 }
