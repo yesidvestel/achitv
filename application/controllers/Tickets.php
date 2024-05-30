@@ -1260,6 +1260,59 @@ $x=0;
             $this->db->update('customers');
         }
         if($ticket->detalle=="Reconexion Combo"){
+            $ultimo_corte=$this->db->query("select * from tickets where detalle LIKE '%Corte%' and cid=".$ticket->cid." order by idt DESC")->result_array();
+            
+            $date_fecha_final1 = new DateTime($ultimo_corte[0]['fecha_final']);
+            $date_fecha_corte1=new DateTime($fecha_final);
+            $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+                        $data_invoice_up=array();
+                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+                        $cada_dia_con_iva=($inv1->total/31);
+                        $total_restar_total=$cada_dia_con_iva*$diferencia->days;
+                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax/31);
+                                $total_restar_iva=$iva_1*$diferencia->days;
+                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal/31);
+                                $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
+                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+
+
+
+                        }else{
+                            $data_invoice_up['subtotal']=$data_invoice_up['total'];
+                        }
+                        $lista_invoices_fa=$this->db->get_where("invoice_items",array("tid"=>$idfactura))->result();
+                        foreach ($lista_invoices_fa as $key => $item_in_r) {
+                            $data_up_item=array();
+
+
+                            
+                                $cada_dia_con_iva=($item_in_r->subtotal/31);
+                                $total_restar_total=$cada_dia_con_iva*$diferencia->days;
+                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
+                                        $iva_1=($item_in_r->totaltax/31);
+                                        $total_restar_iva=$iva_1*$diferencia->days;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+
+                                        $cada_dia_subtotal=($item_in_r->price/31);
+                                        $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
+                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+
+
+
+                                }else{
+                                    $data_up_item['price']=$data_up_item['subtotal'];
+                                }
+                                $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
+                        }
+                    $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
+
+            }
             /*$paquete = $this->input->post('paquete');
             if($paquete=="null" || $paquete==null || $paquete=="" || $paquete=="-"){
                         $paquete = $ticket->section;
@@ -1349,7 +1402,7 @@ $x=0;
                                 }else{
                                     $data_up_item['price']=$data_up_item['subtotal'];
                                 }
-                                $this->db->update("invoice_items",$data_up_item,array("tid"=>$idfactura));
+                                $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
                         }
                     $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
 
