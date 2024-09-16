@@ -2364,7 +2364,7 @@ return $str;
     public function getFacturaElectronica($n_productos=null){
         
     $otro_producto=',{
-              "code": "001",
+              "code": "I01",
               "description": "DESCRIPCION",
               "quantity": 1,
               "price": 21008,
@@ -2376,7 +2376,7 @@ return $str;
 
         $str='{
   "document": {
-    "id": 27147
+    "id": 26604
   },
   "date": "2021-12-31",
   "customer": {
@@ -2384,28 +2384,28 @@ return $str;
     "branch_office": 0
   },
   
-  "seller": 441,
+  "seller": 55,
   "observations": "Observaciones",
   "items": [
     {
-      "code": "001",
+      "code": "I01",
       "description": "DESCRIPCION",
       "quantity": 1,
       "price": 15000,
       "discount": 0.0,
       "taxes": [
-        {"id": 6688,
+        {"id": 1123,
          "name": "IVA 19%",
          "type": "IVA",
          "percentage": 19,
-         "value": 3991.6
+         "value": 3800.0
         }
       ]
     }'.$otro_producto.'
   ],
   "payments": [
     {
-      "id": 3943,
+      "id": 478,
       "value": 15000,
       "due_date": "2021-12-31"
     }
