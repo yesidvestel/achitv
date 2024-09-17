@@ -278,6 +278,7 @@ class Facturas_electronicas_model extends CI_Model
 
         if($dataApiTV!=null){
             $dataApiTV->items[0]->description="Servicio de Televisión por Cable";
+            $dataApiTV->items[0]->code="l01";
             /*if($tv_product->taxrate!=0){
                 $precios=$this->customers->calculoParaFacturaElectronica($tv_product->product_price);
                 $dataApiTV->items[0]->price=$precios['valor_sin_iva'];
