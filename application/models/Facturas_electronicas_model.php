@@ -240,14 +240,14 @@ class Facturas_electronicas_model extends CI_Model
         
         if($dataApiNET!=null){
             $dataApiNET=json_decode($dataApiNET);
-            $dataApiNET->document->id="27271";
+            $dataApiNET->document->id="26604";
             $dataApiNET->customer->identification=$customer->documento;
             //$dataApiNET->cost_center=$centro_de_costo_codeNET;
-            $dataApiNET->seller="647";
+            $dataApiNET->seller="55";
             $dataApiNET->date=$dateTime->format("Y-m-d");
             $dataApiNET->payments[0]->due_date=$dateTimeVencimiento->format("Y-m-d");
             $dataApiNET->observations="Estrato : ".$customer->estrato;
-            $dataApiNET->payments[0]->id="5797";
+            $dataApiNET->payments[0]->id="478";
 
            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
             $consulta_siigo1=$api->getCustomer1($customer->documento,$ob1->tocken);
@@ -255,8 +255,8 @@ class Facturas_electronicas_model extends CI_Model
             
             if(isset($consulta_siigo1) && isset($consulta_siigo1['pagination']) && isset($consulta_siigo1['pagination']['total_results']) && $consulta_siigo1['pagination']['total_results']==0){
                     $json_customer=json_decode($json_customer);
-                    $json_customer->related_users->seller_id=647;
-                    $json_customer->related_users->collector_id=647;
+                    $json_customer->related_users->seller_id=55;
+                    $json_customer->related_users->collector_id=55;
                     $json_customer->contacts[0]->email="facturacionachi2022@gmail.com";
                     $json_customer=json_encode($json_customer);
                     //$json_customer=str_replace("321", "282", subject)
@@ -315,7 +315,7 @@ class Facturas_electronicas_model extends CI_Model
                     if($prod->product_name==$array_servicios['combo']){
                         $producto_existe=true;
                         //var_dump($prod->product_name);
-                        $dataApiNET->items[0]->code="l01";
+                        $dataApiNET->items[0]->code="I01";
 
                         if($prod->taxrate!=0){
 
