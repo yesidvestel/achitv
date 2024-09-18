@@ -2106,7 +2106,7 @@ public function getClientData2Productos(){
             "WareHouseCode": null,
             "SalesmanIdentification": 963852741
         },{
-            "ProductCode": "l01",
+            "ProductCode": "001",
             "Description": "Descripción producto",
             "GrossValue": 21008,
             "BaseValue": 21008,
@@ -2240,7 +2240,7 @@ public function getClientData3Productos(){
             "WareHouseCode": null,
             "SalesmanIdentification": 963852741
         },{
-            "ProductCode": "l01",
+            "ProductCode": "001",
             "Description": "Descripción producto",
             "GrossValue": 21008,
             "BaseValue": 21008,
@@ -2266,7 +2266,7 @@ public function getClientData3Productos(){
             "SalesmanIdentification": 963852741
         },
         {
-            "ProductCode": "l01",
+            "ProductCode": "001",
             "Description": "Descripción producto",
             "GrossValue": 21008,
             "BaseValue": 21008,
@@ -2391,7 +2391,7 @@ return $str;
       "code": "001",
       "description": "DESCRIPCION",
       "quantity": 1,
-      "price": 15000,
+      "price": 16000,
       "discount": 0.0,
       "taxes": [
         {"id": 1123,
