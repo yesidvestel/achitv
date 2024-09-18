@@ -2364,7 +2364,7 @@ return $str;
     public function getFacturaElectronica($n_productos=null){
         
     $otro_producto=',{
-              "code": "I01",
+              "code": "001",
               "description": "DESCRIPCION",
               "quantity": 1,
               "price": 21008,
@@ -2388,7 +2388,7 @@ return $str;
   "observations": "Observaciones",
   "items": [
     {
-      "code": "I01",
+      "code": "001",
       "description": "DESCRIPCION",
       "quantity": 1,
       "price": 15000,
