@@ -2406,7 +2406,7 @@ return $str;
   "payments": [
     {
       "id": 478,
-      "value": 15000,
+      "value": 16000,
       "due_date": "2021-12-31"
     }
   ],
