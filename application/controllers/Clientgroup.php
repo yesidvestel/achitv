@@ -37,7 +37,14 @@ class Clientgroup extends CI_Controller
 
         }
     }
-
+public function x1(){
+    $lista=$this->db->get_where("invoices",array("invoicedate"=>"2024-09-19"))->result_array();
+    foreach ($lista as $key => $value) {
+        $this->db->delete("invoice_items",array("tid"=>$value['tid']));
+        $this->db->delete("invoices",array("tid"=>$value['tid']));
+        // code...
+    }
+}
     //groups
     public function index()
     {
