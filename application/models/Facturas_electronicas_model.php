@@ -316,7 +316,7 @@ class Facturas_electronicas_model extends CI_Model
                     if($prod->product_name==$array_servicios['combo']){
                         $producto_existe=true;
                         //var_dump($prod->product_name);
-                        $dataApiNET->items[0]->code="001";
+                        $dataApiNET->items[0]->code="l01";
 
                         if($prod->taxrate!=0){
 
