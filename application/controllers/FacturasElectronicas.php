@@ -306,7 +306,7 @@ $this->load->model("customers_model","customers");
                     if($prod->product_name==$array_servicios['combo']){
                         $producto_existe=true;
                         //var_dump($prod->product_name);
-                        $dataApiNET->items[0]->code="l01";
+                        $dataApiNET->items[0]->code="I01";
 
                         if($prod->taxrate!=0){
 
