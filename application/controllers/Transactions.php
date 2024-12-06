@@ -554,7 +554,7 @@ class Transactions extends CI_Controller
         //generar reconexion
 		$username = $this->aauth->get_user()->username;
         $tidactualmasuno= $this->db->select('max(codigo)+1 as tid')->from('tickets')->get()->result();
-        if ($reconexion=='si' /*&& $mes2===$mes1*/){
+        if ($reconexion=='si' && $mes2===$mes1){
             $data2['codigo']=$tidactualmasuno[0]->tid;
                 $data2['subject']='servicio';
                 $data2['detalle']=$tipo;
@@ -577,7 +577,8 @@ class Transactions extends CI_Controller
                             $data_h['nombre_columna']="idt";
                             $this->db->insert("historial_crm",$data_h);
                 $reconexion_gen="si";
-        }/*if ($reconexion==si && $mes2>$mes1){
+        }else if ($reconexion=="si" && $mes2>$mes1){
+            
                 $data2['codigo']=$tidactualmasuno[0]->tid;
                 $data2['subject']='servicio';
                 $data2['detalle']=$tipo.'2';
@@ -587,6 +588,7 @@ class Transactions extends CI_Controller
                 $data2['status']='Pendiente';
                 $data2['section']=$paquete;
                 $data2['id_factura']='';
+                //$data2['id_invoice']=$factura_asociada->tid;
                 $this->db->insert('tickets',$data2);
                             $data_h=array();
                             $data_h['modulo']="Usuarios";
@@ -615,7 +617,7 @@ class Transactions extends CI_Controller
                             $data_h['tabla']="temporales";
                             $data_h['nombre_columna']="id";
                             $this->db->insert("historial_crm",$data_h);
-            }*/
+            }
         }
 }
         if($pmethod=='Balance'){

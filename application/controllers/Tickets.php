@@ -820,7 +820,7 @@ if($ya_agrego_equipos==false){
     }
         
         $idfactura = $ticket->id_factura;
-        $data;
+        $data= array();
         $detalle = $this->input->post('detalle');
         $est_afiliacion = $ticket->id_invoice;  
         $customer=$this->db->get_where("customers",array('id' =>$ticket->cid))->row();  
@@ -893,6 +893,8 @@ if($ya_agrego_equipos==false){
         if($date_fecha_final->format("d")==$date_fecha_corte->format("d")){
             $d1=date($date_fecha_final->format("Y-m-d"));
            $date_fecha_final= new DateTime(date("Y-m-d",strtotime($d1." - 1 days")));
+            //creo que este es el problema toca hacer pruebas
+
         }
 
         $diferencia = $date_fecha_final->diff($date_fecha_corte);
@@ -906,6 +908,9 @@ if($ya_agrego_equipos==false){
         $total=0;
         $tax2=0;//var_dump($invoice[0]);
         //cod x
+        //$data['combo']=null;
+        //var_dump($data['combo']);
+        //var_dump("hola");
         if (isset($temporal) && $ticket->codigo===$temporal->corden){
             $data['csd']=$ticket->cid;
             $data['television']=$temporal->tv;
@@ -1084,7 +1089,9 @@ $x=0;
             
             $data['total']=$data['subtotal']+$data['tax'];
             //$_SESSION['x2a']=$data;
-            if($this->db->insert('invoices',$data)){
+            //var_dump("hola");
+            $val=$this->db->insert('invoices',$data);
+            if($val){
                 if($ticket->par!=null && ($ticket->detalle=="Reconexion Internet2" || $ticket->detalle=="Reconexion Television2")){
                         $this->db->set('id_factura', $data['tid']);
                         $this->db->where('par', $ticket->par);
@@ -1133,7 +1140,7 @@ $x=0;
         }else{
             $msg1="no redirect";        
         }
-
+//exit();
         if(strpos(strtolower($ticket->detalle), "reconexi")!==false){                        
                 $datay=array();
                 $datay['tid']=$ticket->id_factura;
@@ -1260,25 +1267,33 @@ $x=0;
             $this->db->update('customers');
         }
         if($ticket->detalle=="Reconexion Combo"){
-            $ultimo_corte=$this->db->query("select * from tickets where detalle LIKE '%Corte%' and cid=".$ticket->cid." order by idt DESC")->result_array();
+             $ultimo_corte=$this->db->query("select * from tickets where detalle LIKE '%Corte%' and cid=".$ticket->cid." order by idt DESC")->result_array();
             
             $date_fecha_final1 = new DateTime($ultimo_corte[0]['fecha_final']);
             $date_fecha_corte1=new DateTime($fecha_final);
             $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
-            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+            $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m") && $inv1->total_antes_de_cortar!=null){
                         $data_invoice_up=array();
-                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
-                        $cada_dia_con_iva=($inv1->total/31);
-                        $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
-                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
-                                $iva_1=($inv1->tax/31);
-                                $total_restar_iva=$iva_1*$diferencia->days;
-                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+                        
+                        $cada_dia_con_iva=($inv1->total_antes_de_cortar/31);
 
-                                $cada_dia_subtotal=($inv1->subtotal/31);
-                                $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total+$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax_antes_de_cortar/31);
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax+$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal_antes_de_cortar/31);
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal+$total_restar_subtotal;
 
 
 
@@ -1291,17 +1306,17 @@ $x=0;
 
 
                             
-                                $cada_dia_con_iva=($item_in_r->subtotal/31);
-                                $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                $cada_dia_con_iva=($item_in_r->subtotal_antes_de_cortar/31);
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal+$total_restar_total;
                                 if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
-                                        $iva_1=($item_in_r->totaltax/31);
-                                        $total_restar_iva=$iva_1*$diferencia->days;
-                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+                                        $iva_1=($item_in_r->totaltax_antes_de_cortar/31);
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax+$total_restar_iva;
 
-                                        $cada_dia_subtotal=($item_in_r->price/31);
-                                        $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+                                        $cada_dia_subtotal=($item_in_r->price_antes_de_cortar/31);
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price+$total_restar_subtotal;
 
 
 
@@ -1310,6 +1325,7 @@ $x=0;
                                 }
                                 $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
                         }
+                        $data_invoice_up['total_antes_de_cortar']=null;
                     $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
 
             }
@@ -1350,29 +1366,33 @@ $x=0;
                 //$this->customers->activar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
         }       
         if($ticket->detalle=="Reconexion Internet"){
-            /*$paquete = $this->input->post('paquete');
-            if($paquete=="null" || $paquete==null || $paquete=="" || $paquete=="-"){
-                        $paquete = $ticket->section;
-                    }*/
             $ultimo_corte=$this->db->query("select * from tickets where detalle LIKE '%Corte%' and cid=".$ticket->cid." order by idt DESC")->result_array();
             
             $date_fecha_final1 = new DateTime($ultimo_corte[0]['fecha_final']);
             $date_fecha_corte1=new DateTime($fecha_final);
             $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
-            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+            $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m") && $inv1->total_antes_de_cortar!=null){
                         $data_invoice_up=array();
-                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
-                        $cada_dia_con_iva=($inv1->total/31);
-                        $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
-                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
-                                $iva_1=($inv1->tax/31);
-                                $total_restar_iva=$iva_1*$diferencia->days;
-                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+                        
+                        $cada_dia_con_iva=($inv1->total_antes_de_cortar/31);
 
-                                $cada_dia_subtotal=($inv1->subtotal/31);
-                                $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total+$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax_antes_de_cortar/31);
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax+$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal_antes_de_cortar/31);
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal+$total_restar_subtotal;
 
 
 
@@ -1385,17 +1405,17 @@ $x=0;
 
 
                             
-                                $cada_dia_con_iva=($item_in_r->subtotal/31);
-                                $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                $cada_dia_con_iva=($item_in_r->subtotal_antes_de_cortar/31);
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal+$total_restar_total;
                                 if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
-                                        $iva_1=($item_in_r->totaltax/31);
-                                        $total_restar_iva=$iva_1*$diferencia->days;
-                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+                                        $iva_1=($item_in_r->totaltax_antes_de_cortar/31);
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax+$total_restar_iva;
 
-                                        $cada_dia_subtotal=($item_in_r->price/31);
-                                        $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+                                        $cada_dia_subtotal=($item_in_r->price_antes_de_cortar/31);
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price+$total_restar_subtotal;
 
 
 
@@ -1404,6 +1424,7 @@ $x=0;
                                 }
                                 $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
                         }
+                        $data_invoice_up['total_antes_de_cortar']=null;
                     $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
 
             }
@@ -1450,20 +1471,28 @@ $x=0;
             $date_fecha_final1 = new DateTime($ultimo_corte[0]['fecha_final']);
             $date_fecha_corte1=new DateTime($fecha_final);
             $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
-            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+            $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m") && $inv1->total_antes_de_cortar!=null){
                         $data_invoice_up=array();
-                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
-                        $cada_dia_con_iva=($inv1->total/31);
-                        $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
-                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
-                                $iva_1=($inv1->tax/31);
-                                $total_restar_iva=$iva_1*$diferencia->days;
-                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+                        
+                        $cada_dia_con_iva=($inv1->total_antes_de_cortar/31);
 
-                                $cada_dia_subtotal=($inv1->subtotal/31);
-                                $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total+$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax_antes_de_cortar/31);
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax+$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal_antes_de_cortar/31);
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal+$total_restar_subtotal;
 
 
 
@@ -1476,17 +1505,17 @@ $x=0;
 
 
                             
-                                $cada_dia_con_iva=($item_in_r->subtotal/31);
-                                $total_restar_total=$cada_dia_con_iva*$diferencia->days;
-                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                $cada_dia_con_iva=($item_in_r->subtotal_antes_de_cortar/31);
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal+$total_restar_total;
                                 if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
-                                        $iva_1=($item_in_r->totaltax/31);
-                                        $total_restar_iva=$iva_1*$diferencia->days;
-                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+                                        $iva_1=($item_in_r->totaltax_antes_de_cortar/31);
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax+$total_restar_iva;
 
-                                        $cada_dia_subtotal=($item_in_r->price/31);
-                                        $total_restar_subtotal=$cada_dia_subtotal*$diferencia->days;
-                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+                                        $cada_dia_subtotal=($item_in_r->price_antes_de_cortar/31);
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price+$total_restar_subtotal;
 
 
 
@@ -1495,6 +1524,7 @@ $x=0;
                                 }
                                 $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
                         }
+                        $data_invoice_up['total_antes_de_cortar']=null;
                     $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
 
             }
@@ -1526,7 +1556,73 @@ $x=0;
        
 
         if($ticket->detalle=="Corte Combo"){
+$factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+ 
+            
+            $date_fecha_final1 = new DateTime($factura->invoicedate);
+            $date_fecha_final1 = new DateTime($date_fecha_final1->format("Y-m-01"));
+            $date_fecha_corte1=new DateTime($fecha_final);
+            $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+                        $data_invoice_up=array();
+                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+                        $cada_dia_con_iva=($inv1->total/31);
+                        $data_invoice_up['total_antes_de_cortar']=$inv1->total;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax/31);
+                                $data_invoice_up['tax_antes_de_cortar']=$inv1->tax;
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
 
+                                $cada_dia_subtotal=($inv1->subtotal/31);
+                                $data_invoice_up['subtotal_antes_de_cortar']=$inv1->tax;
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+
+
+
+                        }else{
+                            $data_invoice_up['subtotal']=$data_invoice_up['total'];
+                        }
+                        $lista_invoices_fa=$this->db->get_where("invoice_items",array("tid"=>$idfactura))->result();
+                        foreach ($lista_invoices_fa as $key => $item_in_r) {
+                            $data_up_item=array();
+
+
+                            
+                                $cada_dia_con_iva=($item_in_r->subtotal/31);
+                                $data_up_item['subtotal_antes_de_cortar']=$item_in_r->subtotal;
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
+                                        $iva_1=($item_in_r->totaltax/31);
+                                        $data_up_item['totaltax_antes_de_cortar']=$item_in_r->totaltax;
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+
+                                        $cada_dia_subtotal=($item_in_r->price/31);
+                                        $data_up_item['price_antes_de_cortar']=$item_in_r->price;
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+
+
+
+                                }else{
+                                    $data_up_item['price']=$data_up_item['subtotal'];
+                                }
+                                $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
+                        }
+                    $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
+
+            }
              /*$reconexion = '0';
                             if ($factura->combo!='no' || $factura->combo!='' || $factura->combo!='-'){
                                     $reconexion = '1';
@@ -1582,6 +1678,72 @@ $x=0;
         }
         if($ticket->detalle=="Corte Internet"){
             $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+ 
+            
+            $date_fecha_final1 = new DateTime($factura->invoicedate);
+            $date_fecha_final1 = new DateTime($date_fecha_final1->format("Y-m-01"));
+            $date_fecha_corte1=new DateTime($fecha_final);
+            $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+                        $data_invoice_up=array();
+                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+                        $cada_dia_con_iva=($inv1->total/31);
+                        $data_invoice_up['total_antes_de_cortar']=$inv1->total;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax/31);
+                                $data_invoice_up['tax_antes_de_cortar']=$inv1->tax;
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal/31);
+                                $data_invoice_up['subtotal_antes_de_cortar']=$inv1->tax;
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+
+
+
+                        }else{
+                            $data_invoice_up['subtotal']=$data_invoice_up['total'];
+                        }
+                        $lista_invoices_fa=$this->db->get_where("invoice_items",array("tid"=>$idfactura))->result();
+                        foreach ($lista_invoices_fa as $key => $item_in_r) {
+                            $data_up_item=array();
+
+
+                            
+                                $cada_dia_con_iva=($item_in_r->subtotal/31);
+                                $data_up_item['subtotal_antes_de_cortar']=$item_in_r->subtotal;
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
+                                        $iva_1=($item_in_r->totaltax/31);
+                                        $data_up_item['totaltax_antes_de_cortar']=$item_in_r->totaltax;
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+
+                                        $cada_dia_subtotal=($item_in_r->price/31);
+                                        $data_up_item['price_antes_de_cortar']=$item_in_r->price;
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+
+
+
+                                }else{
+                                    $data_up_item['price']=$data_up_item['subtotal'];
+                                }
+                                $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
+                        }
+                    $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
+
+            }
             $producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Internet'))->row();
             if ($factura->television==='no'  || $factura->television=='' || $factura->television==null || $factura->television=='-' || $factura->estado_tv=="Cortado" ||  $factura->estado_tv=="Suspendido"){
                 $nestado = 'Cortado';
@@ -1637,6 +1799,75 @@ $x=0;
             }
         }
         if($ticket->detalle=="Corte Television"){
+               $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+ 
+            
+            $date_fecha_final1 = new DateTime($factura->invoicedate);
+            $date_fecha_final1 = new DateTime($date_fecha_final1->format("Y-m-01"));
+            $date_fecha_corte1=new DateTime($fecha_final);
+            $diferencia = $date_fecha_final1->diff($date_fecha_corte1); 
+            if($diferencia->days>=1 && $date_fecha_corte1->format("m")==$date_fecha_final1->format("m")){
+                        $data_invoice_up=array();
+                        $inv1=$this->db->get_where("invoices",array("tid"=>$idfactura))->row();
+                        $cada_dia_con_iva=($inv1->total/31);
+                        $data_invoice_up['total_antes_de_cortar']=$inv1->total;
+                     
+                        $ultimoDiaDelMes=date("Y-m-t 23:00:00");
+                        $ultimoDiaDelMes=new DateTime($ultimoDiaDelMes);
+                        $ultimoDiaDelMes=$ultimoDiaDelMes->format("d");
+                        $dif_dias=$ultimoDiaDelMes-($date_fecha_corte1->format("d"));
+                        
+                        $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                        $data_invoice_up['total']=$inv1->total-$total_restar_total;
+                        if($inv1->tax!=null && $inv1->tax!="" && $inv1->tax>0){
+                                $iva_1=($inv1->tax/31);
+                                $data_invoice_up['tax_antes_de_cortar']=$inv1->tax;
+                                $total_restar_iva=$iva_1*$dif_dias;
+                                $data_invoice_up['tax']=$inv1->tax-$total_restar_iva;
+
+                                $cada_dia_subtotal=($inv1->subtotal/31);
+                                $data_invoice_up['subtotal_antes_de_cortar']=$inv1->tax;
+                                $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                $data_invoice_up['subtotal']=$inv1->subtotal-$total_restar_subtotal;
+
+
+
+                        }else{
+                            $data_invoice_up['subtotal']=$data_invoice_up['total'];
+                        }
+                        $lista_invoices_fa=$this->db->get_where("invoice_items",array("tid"=>$idfactura))->result();
+                        foreach ($lista_invoices_fa as $key => $item_in_r) {
+                            $data_up_item=array();
+
+
+                            
+                                $cada_dia_con_iva=($item_in_r->subtotal/31);
+                                $data_up_item['subtotal_antes_de_cortar']=$item_in_r->subtotal;
+                                $total_restar_total=$cada_dia_con_iva*$dif_dias;
+                                $data_up_item['subtotal']=$item_in_r->subtotal-$total_restar_total;
+                                if($item_in_r->totaltax!=null && $item_in_r->totaltax!="" && $item_in_r->totaltax>0){
+                                        $iva_1=($item_in_r->totaltax/31);
+                                        $data_up_item['totaltax_antes_de_cortar']=$item_in_r->totaltax;
+                                        $total_restar_iva=$iva_1*$dif_dias;
+                                        $data_up_item['totaltax']=$item_in_r->totaltax-$total_restar_iva;
+
+                                        $cada_dia_subtotal=($item_in_r->price/31);
+                                        $data_up_item['price_antes_de_cortar']=$item_in_r->price;
+                                        $total_restar_subtotal=$cada_dia_subtotal*$dif_dias;
+                                        $data_up_item['price']=$item_in_r->price-$total_restar_subtotal;
+
+
+
+                                }else{
+                                    $data_up_item['price']=$data_up_item['subtotal'];
+                                }
+                                $this->db->update("invoice_items",$data_up_item,array("id"=>$item_in_r->id));
+                        }
+                    $this->db->update("invoices",$data_invoice_up,array("tid"=>$idfactura));
+
+            }
+
+
             //agregar reconexion
             /*$producto2 = $this->db->get_where('products',array('product_name'=>'Reconexión Television'))->row();
                 $data2['tid']=$idfactura;
@@ -1651,7 +1882,7 @@ $x=0;
                 $this->db->set('subtotal', $factura->subtotal+$producto2->product_price);
                 $this->db->set('total', $factura->total+$producto2->product_price);
                 $this->db->set('items', $factura->items+1);*/
-                $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+             
                 $this->db->set('estado_tv', 'Cortado');
                 $this->db->where('tid', $idfactura);
                 $this->db->update('invoices');

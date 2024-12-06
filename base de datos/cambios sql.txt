@@ -320,3 +320,12 @@ ALTER TABLE `asignaciones`
   MODIFY `idasig` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
+----------------------------------------------------------siigo update -------------
+UPDATE `config_facturacion_electronica` SET `access_key` = 'ODQwYjNlZDQtMjJmNy00NjY5LTg1NDctZDFkMWE1MTY4MWU2Oj8wI3tPcDwobVA=' WHERE `config_facturacion_electronica`.`id` = 2;
+UPDATE `config_facturacion_electronica` SET `access_key` = 'ODQwYjNlZDQtMjJmNy00NjY5LTg1NDctZDFkMWE1MTY4MWU2Oj8wI3tPcDwobVA=' WHERE `config_facturacion_electronica`.`id` = 1;
+
+
+--------reconexiones y cortes --------
+ALTER TABLE `invoices` ADD `total_antes_de_cortar` INT NULL AFTER `resivos_guardados`, ADD `tax_antes_de_cortar` INT NULL AFTER `total_antes_de_cortar`, ADD `subtotal_antes_de_cortar` INT NULL AFTER `tax_antes_de_cortar`;
+
+ALTER TABLE `invoice_items` ADD `subtotal_antes_de_cortar` INT NULL AFTER `fecha_creacion`, ADD `totaltax_antes_de_cortar` INT NULL AFTER `subtotal_antes_de_cortar`, ADD `price_antes_de_cortar` INT NULL AFTER `totaltax_antes_de_cortar`;
