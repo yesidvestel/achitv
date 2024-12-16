@@ -363,17 +363,17 @@ class Facturas_electronicas_model extends CI_Model
         //var_dump($dataApiTV);
         $retorno=array("mensaje"=>"No");
          if($dataApiTV!=null && $dataApiTV!="null"){
-            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
-            $retorno = $api->accionar2($api,$dataApiTV,$ob1->tocken);   
+            //$ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>1))->row();
+            //$retorno = $api->accionar2($api,$dataApiTV,$ob1->tocken);   
              
             if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-                //$ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
-               // $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
+                $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+                $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
               
             }
         }else if($dataApiNET!=null && $dataApiNET!="null" && $producto_existe==true){
-            //$ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
-           // $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
+            $ob1=$this->db->get_where("config_facturacion_electronica",array("id"=>2))->row();
+            $retorno = $api->accionar2($api,$dataApiNET,$ob1->tocken);     
           
         }
         
