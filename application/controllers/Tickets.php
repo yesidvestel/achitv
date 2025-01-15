@@ -1015,24 +1015,7 @@ if($ya_agrego_equipos==false){
                     }
                 }
                 //$_SESSION['x02a']=$total;
-                if($data['television']!=="no" AND $data['refer']=="Mocoa" || $tv!=="no" && $ciudad=="Mocoa"){                
-                    $producto = $this->db->get_where('products',array('pid'=>159))->row();
-                    $datay['pid']=$producto->pid;
-                    $datay['product']=$producto->product_name;
-                    $datay['qty']=1;
-                    $x=intval($producto->product_price);
-                    $x=($x/31)*$diferencia->days;
-                    $total+=$x;
-                    $tax2+=$datay['totaltax'];
-                    $datay['price']=$x;
-                    $datay['totaltax']='';
-                    $datay['subtotal']=$x;
-                    
-                    if(($ticket->detalle=="Instalacion" || $ticket->detalle=="Reconexion Combo2" || $ticket->detalle=="Activacion" || $ticket->detalle=="Reconexion Television2") && ($ticket->id_factura==null || $ticket->id_factura==0)  && $status=="Resuelto"){
-                        $this->db->insert('invoice_items',$datay);
-                        
-                    }
-                }
+                
                 //$_SESSION['x03a']=$total;
             
        
@@ -2139,7 +2122,15 @@ $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
                 //$this->customers->desactivar_estado_usuario($customerx->name_s,$id_sede_mk,$customerx->tegnologia_instalacion);
         }
         if($ticket->detalle=="AgregarTelevision" || ($ticket->detalle=="Reconexion Television2" && ($ticket->id_factura!=0 || $ticket->id_factura!=null))){         
-            $producto = $this->db->get_where('products',array('product_name'=>$data['television']))->row();
+            $factura = $this->db->get_where('invoices',array('tid'=>$idfactura))->row();
+            $producto = $this->db->get_where('products',array('product_name'=>$factura->television))->row();
+            if($ticket->detalle=="AgregarTelevision"){
+                $producto = $this->db->get_where('products',array('product_name'=>$temporal->tv))->row();
+                if(empty($producto)){
+                    $producto = $this->db->get_where('products',array('product_name'=>"Television"))->row();
+                }
+                
+            }
             $total=0;
             $taxvalue=0;
             
